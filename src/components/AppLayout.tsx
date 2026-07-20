@@ -4,28 +4,26 @@ import { useState } from "react";
 import { cn } from "@/utils";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
-import type { EdgeModel, NodeModel } from "@/lib/graph";
+import { MapSystem, mapToGraph, type TerrainType } from "@/lib/map";
 
-const sampleNodes: NodeModel[] = [
-  { id: "A", label: "A" },
-  { id: "B", label: "B" },
-  { id: "C", label: "C" },
-  { id: "D", label: "D" },
-  { id: "E", label: "E" },
-  { id: "F", label: "F" },
-  { id: "G", label: "G" },
-];
+const MAP_ROWS = 8;
+const MAP_COLS = 10;
 
-const sampleEdges: EdgeModel[] = [
-  { source: "A", target: "B", weight: 4 },
-  { source: "A", target: "C", weight: 2 },
-  { source: "B", target: "D", weight: 5 },
-  { source: "C", target: "D", weight: 1 },
-  { source: "C", target: "E", weight: 8 },
-  { source: "D", target: "F", weight: 3 },
-  { source: "E", target: "F", weight: 2 },
-  { source: "F", target: "G", weight: 6 },
-];
+const SAMPLE_TERRAIN: (row: number, col: number) => TerrainType = (r, c) => {
+  if ((r === 3 || r === 4) && c >= 2 && c <= 7) return "wall";
+  if (r >= 5 && c <= 2) return "water";
+  if ((r + c) % 4 === 0) return "rough";
+  return "plain";
+};
+
+const sampleMap = new MapSystem({
+  rows: MAP_ROWS,
+  cols: MAP_COLS,
+  terrain: SAMPLE_TERRAIN,
+});
+const sampleGraph = mapToGraph(sampleMap);
+const sampleNodes = sampleGraph.getNodes();
+const sampleEdges = sampleGraph.getEdges();
 
 interface AppLayoutProps {
   children: React.ReactNode;

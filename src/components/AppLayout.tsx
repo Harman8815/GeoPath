@@ -1,0 +1,101 @@
+"use client";
+
+import { useState } from "react";
+import { cn } from "@/utils";
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function AppLayout({ children }: AppLayoutProps) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <Header onMenuClick={() => setMobileNavOpen(true)} />
+
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-64 shrink-0 border-r border-black/10 p-4 lg:block dark:border-white/10">
+          <PanelPlaceholder label="Left Sidebar" />
+        </aside>
+
+        <main className="flex min-w-0 flex-1 flex-col p-4">
+          <PanelPlaceholder label="Main Visualization Panel" />
+        </main>
+
+        <aside className="hidden w-72 shrink-0 border-l border-black/10 p-4 xl:block dark:border-white/10">
+          <PanelPlaceholder label="Right Sidebar" />
+        </aside>
+      </div>
+
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        >
+          <div
+            className="absolute left-0 top-0 h-full w-64 border-r border-black/10 bg-background p-4 dark:border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-semibold">Navigation</span>
+              <button
+                type="button"
+                aria-label="Close navigation"
+                className="rounded p-1 text-lg leading-none hover:bg-black/5 dark:hover:bg-white/10"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <PanelPlaceholder label="Left Sidebar" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Header({ onMenuClick }: { onMenuClick: () => void }) {
+  return (
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-black/10 px-4 dark:border-white/10">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          aria-label="Open navigation"
+          className="rounded p-1 text-xl leading-none hover:bg-black/5 lg:hidden dark:hover:bg-white/10"
+          onClick={onMenuClick}
+        >
+          &#9776;
+        </button>
+        <span className="text-base font-semibold">EAF</span>
+      </div>
+
+      <ThemeTogglePlaceholder />
+    </header>
+  );
+}
+
+function ThemeTogglePlaceholder() {
+  return (
+    <button
+      type="button"
+      aria-label="Toggle theme"
+      className="rounded-full border border-black/10 px-3 py-1 text-sm hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+    >
+      Theme
+    </button>
+  );
+}
+
+function PanelPlaceholder({ label }: { label: string }) {
+  return (
+    <div
+      className={cn(
+        "flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 text-sm text-black/40 dark:border-white/15 dark:text-white/40",
+      )}
+    >
+      {label}
+    </div>
+  );
+}

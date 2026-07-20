@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/utils";
+import ControlPanel from "./ControlPanel";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,9 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [source, setSource] = useState("A");
+  const [destination, setDestination] = useState("G");
+  const [speed, setSpeed] = useState(1);
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -16,7 +20,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-64 shrink-0 border-r border-black/10 p-4 lg:block dark:border-white/10">
-          <PanelPlaceholder label="Left Sidebar" />
+          <div className="flex h-full flex-col gap-4 overflow-y-auto">
+            <ControlPanel
+              source={source}
+              destination={destination}
+              speed={speed}
+              onSourceChange={setSource}
+              onDestinationChange={setDestination}
+              onSpeedChange={setSpeed}
+            />
+          </div>
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col p-4">
@@ -24,7 +37,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </main>
 
         <aside className="hidden w-72 shrink-0 border-l border-black/10 p-4 xl:block dark:border-white/10">
-          <PanelPlaceholder label="Right Sidebar" />
+          <div className="flex h-full flex-col gap-4 overflow-y-auto">
+            <h3 className="text-sm font-semibold">Details</h3>
+            <PanelPlaceholder label="Right Sidebar" />
+          </div>
         </aside>
       </div>
 
@@ -48,7 +64,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 &times;
               </button>
             </div>
-            <PanelPlaceholder label="Left Sidebar" />
+            <ControlPanel
+              source={source}
+              destination={destination}
+              speed={speed}
+              onSourceChange={setSource}
+              onDestinationChange={setDestination}
+              onSpeedChange={setSpeed}
+            />
           </div>
         </div>
       )}

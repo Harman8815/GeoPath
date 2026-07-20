@@ -4,31 +4,7 @@ import { useState } from "react";
 import { cn } from "@/utils";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
-import { MapSystem, mapToGraph, type TerrainType } from "@/lib/map";
-import { generateCityGraph } from "@/lib/graph";
-
-const MAP_ROWS = 8;
-const MAP_COLS = 10;
-
-const SAMPLE_TERRAIN: (row: number, col: number) => TerrainType = (r, c) => {
-  if ((r === 3 || r === 4) && c >= 2 && c <= 7) return "wall";
-  if (r >= 5 && c <= 2) return "water";
-  if ((r + c) % 4 === 0) return "rough";
-  return "plain";
-};
-
-const sampleMap = new MapSystem({
-  rows: MAP_ROWS,
-  cols: MAP_COLS,
-  terrain: SAMPLE_TERRAIN,
-});
-const sampleGraph = mapToGraph(sampleMap);
-const sampleNodes = sampleGraph.getNodes();
-const sampleEdges = sampleGraph.getEdges();
-
-const cityGraph = generateCityGraph({ seed: 42 });
-const cityNodes = cityGraph.getNodes();
-const cityEdges = cityGraph.getEdges();
+import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -40,6 +16,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [destination, setDestination] = useState("G");
   const [speed, setSpeed] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
+  const [mapId, setMapId] = useState(SAMPLE_MAPS[0].id);
+  const mapNodes = sampleMapNodes(mapId);
+  const mapEdges = sampleMapEdges(mapId);
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -52,9 +31,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
               source={source}
               destination={destination}
               speed={speed}
+              map={mapId}
+              maps={SAMPLE_MAPS.map((m) => ({ id: m.id, name: m.name }))}
               onSourceChange={setSource}
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
+              onMapChange={setMapId}
             />
           </div>
         </aside>
@@ -62,8 +44,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <main className="flex min-w-0 flex-1 flex-col p-4">
           <div className="flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 p-2 text-black/40 dark:border-white/15 dark:text-white/40">
             <GraphRenderer
-              nodes={cityNodes}
-              edges={cityEdges}
+              nodes={mapNodes}
+              edges={mapEdges}
               source={source}
               destination={destination}
               selected={selected}
@@ -106,9 +88,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
               source={source}
               destination={destination}
               speed={speed}
+              map={mapId}
+              maps={SAMPLE_MAPS.map((m) => ({ id: m.id, name: m.name }))}
               onSourceChange={setSource}
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
+              onMapChange={setMapId}
             />
           </div>
         </div>

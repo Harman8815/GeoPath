@@ -36,6 +36,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [source, setSource] = useState("A");
   const [destination, setDestination] = useState("G");
   const [speed, setSpeed] = useState(1);
+  const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -57,7 +58,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
         <main className="flex min-w-0 flex-1 flex-col p-4">
           <div className="flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 p-2 text-black/40 dark:border-white/15 dark:text-white/40">
-            <GraphRenderer nodes={sampleNodes} edges={sampleEdges} />
+            <GraphRenderer
+              nodes={sampleNodes}
+              edges={sampleEdges}
+              source={source}
+              destination={destination}
+              selected={selected}
+              onSelectNode={setSelected}
+              onSetSource={setSource}
+              onSetDestination={setDestination}
+            />
           </div>
         </main>
 

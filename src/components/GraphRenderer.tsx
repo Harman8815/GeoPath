@@ -9,6 +9,12 @@ export interface GraphRendererProps {
   width?: number;
   height?: number;
   nodeRadius?: number;
+  source?: string | null;
+  destination?: string | null;
+  selected?: string | null;
+  onSelectNode?: (id: string | null) => void;
+  onSetSource?: (id: string) => void;
+  onSetDestination?: (id: string) => void;
 }
 
 const DEFAULT_WIDTH = 800;
@@ -31,9 +37,16 @@ export default function GraphRenderer({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   nodeRadius = DEFAULT_RADIUS,
+  source = null,
+  destination = null,
+  selected = null,
+  onSelectNode,
+  onSetSource,
+  onSetDestination,
 }: GraphRendererProps) {
   const positions = useNodePositions(nodes, width, height);
   const [camera, setCamera] = useState<Camera>(IDENTITY);
+  const [hovered, setHovered] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(
     null,
@@ -137,6 +150,7 @@ export default function GraphRenderer({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
+        onClick={() => onSelectNode?.(null)}
       >
         <g
           transform={`translate(${camera.offsetX}, ${camera.offsetY}) scale(${camera.scale})`}
@@ -178,12 +192,55 @@ export default function GraphRenderer({
             {nodes.map((node) => {
               const pos = positions.get(node.id);
               if (!pos) return null;
+              const isSource = node.id === source;
+              const isDest = node.id === destination;
+              const isSelected = node.id === selected;
+              const isHovered = node.id === hovered;
+              const ringColor = isSource
+                ? "#22c55e"
+                : isDest
+                  ? "#ef4444"
+                  : isSelected
+                    ? "#3b82f6"
+                    : "currentColor";
               return (
-                <g key={node.id} transform={`translate(${pos.x}, ${pos.y})`}>
+                <g
+                  key={node.id}
+                  transform={`translate(${pos.x}, ${pos.y})`}
+                  className="cursor-pointer"
+                  onPointerEnter={() => setHovered(node.id)}
+                  onPointerLeave={() =>
+                    setHovered((h) => (h === node.id ? null : h))
+                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectNode?.(node.id);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    onSetSource?.(node.id);
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    onSetDestination?.(node.id);
+                  }}
+                >
+                  {(isHovered || isSelected || isSource || isDest) && (
+                    <circle
+                      r={nodeRadius + (isHovered ? 6 : 4)}
+                      className="fill-none"
+                      stroke={ringColor}
+                      strokeOpacity={0.6}
+                      strokeWidth={2}
+                    />
+                  )}
                   <circle
                     r={nodeRadius}
-                    className="fill-background stroke-current"
-                    strokeWidth={2}
+                    className="fill-background stroke-current transition-[stroke]"
+                    stroke={ringColor}
+                    strokeWidth={
+                      isSource || isDest || isSelected ? 3 : 2
+                    }
                   />
                   <text
                     textAnchor="middle"
@@ -191,6 +248,7 @@ export default function GraphRenderer({
                     className="fill-current"
                     fontSize={12}
                     fontWeight={600}
+                    pointerEvents="none"
                   >
                     {node.label ?? node.id}
                   </text>

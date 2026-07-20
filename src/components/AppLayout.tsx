@@ -3,6 +3,29 @@
 import { useState } from "react";
 import { cn } from "@/utils";
 import ControlPanel from "./ControlPanel";
+import GraphRenderer from "./GraphRenderer";
+import type { EdgeModel, NodeModel } from "@/lib/graph";
+
+const sampleNodes: NodeModel[] = [
+  { id: "A", label: "A" },
+  { id: "B", label: "B" },
+  { id: "C", label: "C" },
+  { id: "D", label: "D" },
+  { id: "E", label: "E" },
+  { id: "F", label: "F" },
+  { id: "G", label: "G" },
+];
+
+const sampleEdges: EdgeModel[] = [
+  { source: "A", target: "B", weight: 4 },
+  { source: "A", target: "C", weight: 2 },
+  { source: "B", target: "D", weight: 5 },
+  { source: "C", target: "D", weight: 1 },
+  { source: "C", target: "E", weight: 8 },
+  { source: "D", target: "F", weight: 3 },
+  { source: "E", target: "F", weight: 2 },
+  { source: "F", target: "G", weight: 6 },
+];
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -33,7 +56,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col p-4">
-          <PanelPlaceholder label="Main Visualization Panel" />
+          <div className="flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 p-2 text-black/40 dark:border-white/15 dark:text-white/40">
+            <GraphRenderer nodes={sampleNodes} edges={sampleEdges} />
+          </div>
         </main>
 
         <aside className="hidden w-72 shrink-0 border-l border-black/10 p-4 xl:block dark:border-white/10">

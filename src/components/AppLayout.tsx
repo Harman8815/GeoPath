@@ -6,6 +6,7 @@ import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
 import ImportMap from "./ImportMap";
+import OSMImport from "./OSMImport";
 import type { GraphData, NodeModel, EdgeModel } from "@/lib/graph";
 
 interface AppLayoutProps {
@@ -28,6 +29,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     setMapId("");
   };
 
+  const handleOSMLoad = (graph: GraphData) => {
+    setCustom(graph);
+    setMapId("");
+  };
+
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <Header onMenuClick={() => setMobileNavOpen(true)} />
@@ -47,6 +53,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onMapChange={setMapId}
             />
             <ImportMap onImport={handleImport} />
+            <OSMImport onLoad={handleOSMLoad} />
           </div>
         </aside>
 
@@ -105,6 +112,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onMapChange={setMapId}
             />
             <ImportMap onImport={handleImport} />
+            <OSMImport onLoad={handleOSMLoad} />
           </div>
         </div>
       )}

@@ -5,6 +5,7 @@ import { cn } from "@/utils";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
 import { MapSystem, mapToGraph, type TerrainType } from "@/lib/map";
+import { generateCityGraph } from "@/lib/graph";
 
 const MAP_ROWS = 8;
 const MAP_COLS = 10;
@@ -24,6 +25,10 @@ const sampleMap = new MapSystem({
 const sampleGraph = mapToGraph(sampleMap);
 const sampleNodes = sampleGraph.getNodes();
 const sampleEdges = sampleGraph.getEdges();
+
+const cityGraph = generateCityGraph({ seed: 42 });
+const cityNodes = cityGraph.getNodes();
+const cityEdges = cityGraph.getEdges();
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -57,8 +62,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <main className="flex min-w-0 flex-1 flex-col p-4">
           <div className="flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 p-2 text-black/40 dark:border-white/15 dark:text-white/40">
             <GraphRenderer
-              nodes={sampleNodes}
-              edges={sampleEdges}
+              nodes={cityNodes}
+              edges={cityEdges}
               source={source}
               destination={destination}
               selected={selected}

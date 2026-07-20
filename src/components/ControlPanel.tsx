@@ -4,9 +4,12 @@ export interface ControlPanelProps {
   source: string;
   destination: string;
   speed: number;
+  map?: string;
+  maps?: Array<{ id: string; name: string }>;
   onSourceChange?: (value: string) => void;
   onDestinationChange?: (value: string) => void;
   onSpeedChange?: (value: number) => void;
+  onMapChange?: (value: string) => void;
   onPlay?: () => void;
   onPause?: () => void;
   onResume?: () => void;
@@ -21,9 +24,12 @@ export default function ControlPanel({
   source,
   destination,
   speed,
+  map,
+  maps,
   onSourceChange,
   onDestinationChange,
   onSpeedChange,
+  onMapChange,
   onPlay,
   onPause,
   onResume,
@@ -42,6 +48,18 @@ export default function ControlPanel({
           <ControlButton label="Step Back" onClick={onStepBackward} />
           <ControlButton label="Step Forward" onClick={onStepForward} />
         </div>
+      </Section>
+
+      <Section title="Map">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-black/60 dark:text-white/60">Built-in Map</span>
+          <Select
+            value={map ?? maps?.[0]?.id ?? ""}
+            options={(maps ?? []).map((m) => m.id)}
+            labels={(maps ?? []).map((m) => m.name)}
+            onChange={(v) => onMapChange?.(v)}
+          />
+        </label>
       </Section>
 
       <Section title="Animation Speed">
@@ -120,10 +138,12 @@ function ControlButton({
 function Select({
   value,
   options,
+  labels,
   onChange,
 }: {
   value: string;
   options: string[];
+  labels?: string[];
   onChange?: (value: string) => void;
 }) {
   return (
@@ -132,9 +152,9 @@ function Select({
       onChange={(e) => onChange?.(e.target.value)}
       className="rounded-md border border-black/10 bg-background px-3 py-2 text-sm dark:border-white/10"
     >
-      {options.map((opt) => (
+      {options.map((opt, i) => (
         <option key={opt} value={opt}>
-          {opt}
+          {labels?.[i] ?? opt}
         </option>
       ))}
     </select>

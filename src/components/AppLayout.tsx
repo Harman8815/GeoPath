@@ -4,28 +4,10 @@ import { useState } from "react";
 import { cn } from "@/utils";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
-import type { EdgeModel, NodeModel } from "@/lib/graph";
-
-const sampleNodes: NodeModel[] = [
-  { id: "A", label: "A" },
-  { id: "B", label: "B" },
-  { id: "C", label: "C" },
-  { id: "D", label: "D" },
-  { id: "E", label: "E" },
-  { id: "F", label: "F" },
-  { id: "G", label: "G" },
-];
-
-const sampleEdges: EdgeModel[] = [
-  { source: "A", target: "B", weight: 4 },
-  { source: "A", target: "C", weight: 2 },
-  { source: "B", target: "D", weight: 5 },
-  { source: "C", target: "D", weight: 1 },
-  { source: "C", target: "E", weight: 8 },
-  { source: "D", target: "F", weight: 3 },
-  { source: "E", target: "F", weight: 2 },
-  { source: "F", target: "G", weight: 6 },
-];
+import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
+import ImportMap from "./ImportMap";
+import OSMImport from "./OSMImport";
+import type { GraphData, NodeModel, EdgeModel } from "@/lib/graph";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -37,6 +19,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [destination, setDestination] = useState("G");
   const [speed, setSpeed] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
+  const [mapId, setMapId] = useState(SAMPLE_MAPS[0].id);
+  const [custom, setCustom] = useState<GraphData | null>(null);
+  const mapNodes: NodeModel[] = custom ? custom.nodes : sampleMapNodes(mapId);
+  const mapEdges: EdgeModel[] = custom ? custom.edges : sampleMapEdges(mapId);
+
+  const handleImport = (result: { graph: GraphData }) => {
+    setCustom(result.graph);
+    setMapId("");
+  };
+
+  const handleOSMLoad = (graph: GraphData) => {
+    setCustom(graph);
+    setMapId("");
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -49,18 +45,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
               source={source}
               destination={destination}
               speed={speed}
+              map={mapId}
+              maps={SAMPLE_MAPS.map((m) => ({ id: m.id, name: m.name }))}
               onSourceChange={setSource}
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
+              onMapChange={setMapId}
             />
+            <ImportMap onImport={handleImport} />
+            <OSMImport onLoad={handleOSMLoad} />
           </div>
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col p-4">
           <div className="flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 p-2 text-black/40 dark:border-white/15 dark:text-white/40">
             <GraphRenderer
-              nodes={sampleNodes}
-              edges={sampleEdges}
+              nodes={mapNodes}
+              edges={mapEdges}
               source={source}
               destination={destination}
               selected={selected}
@@ -103,10 +104,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
               source={source}
               destination={destination}
               speed={speed}
+              map={mapId}
+              maps={SAMPLE_MAPS.map((m) => ({ id: m.id, name: m.name }))}
               onSourceChange={setSource}
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
+              onMapChange={setMapId}
             />
+            <ImportMap onImport={handleImport} />
+            <OSMImport onLoad={handleOSMLoad} />
           </div>
         </div>
       )}

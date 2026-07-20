@@ -5,6 +5,8 @@ import { cn } from "@/utils";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
+import ImportMap from "./ImportMap";
+import type { GraphData, NodeModel, EdgeModel } from "@/lib/graph";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -17,8 +19,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [speed, setSpeed] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [mapId, setMapId] = useState(SAMPLE_MAPS[0].id);
-  const mapNodes = sampleMapNodes(mapId);
-  const mapEdges = sampleMapEdges(mapId);
+  const [custom, setCustom] = useState<GraphData | null>(null);
+  const mapNodes: NodeModel[] = custom ? custom.nodes : sampleMapNodes(mapId);
+  const mapEdges: EdgeModel[] = custom ? custom.edges : sampleMapEdges(mapId);
+
+  const handleImport = (result: { graph: GraphData }) => {
+    setCustom(result.graph);
+    setMapId("");
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -38,6 +46,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onSpeedChange={setSpeed}
               onMapChange={setMapId}
             />
+            <ImportMap onImport={handleImport} />
           </div>
         </aside>
 
@@ -95,6 +104,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onSpeedChange={setSpeed}
               onMapChange={setMapId}
             />
+            <ImportMap onImport={handleImport} />
           </div>
         </div>
       )}

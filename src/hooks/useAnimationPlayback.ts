@@ -111,7 +111,7 @@ export function useAnimationPlayback({
   const stepForward = useCallback(() => {
     setCurrentIndex((idx) => {
       if (idx < 0) {
-        const all = buildGenerator();
+        buildGenerator();
         return 0;
       }
       if (idx + 1 >= steps.length) {

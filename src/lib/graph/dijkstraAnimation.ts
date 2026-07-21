@@ -1,6 +1,5 @@
 import { Graph } from "./Graph";
 import { PriorityQueue } from "./PriorityQueue";
-import type { EdgeModel, NodeModel } from "./types";
 
 export type AnimationStepType =
   | "init"

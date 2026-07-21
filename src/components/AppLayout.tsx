@@ -14,11 +14,7 @@ import ImportMap from "./ImportMap";
 import OSMImport from "./OSMImport";
 import type { GraphData, NodeModel, EdgeModel } from "@/lib/graph";
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [source, setSource] = useState("A");
   const [destination, setDestination] = useState("G");

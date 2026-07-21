@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { EdgeModel, NodeModel } from "@/lib/graph";
-import type { AnimationStep } from "@/lib/graph/dijkstraAnimation";
 
 export interface GraphRendererProps {
   nodes: NodeModel[];
@@ -17,7 +16,6 @@ export interface GraphRendererProps {
   currentNode?: string | null;
   queueNodes?: string[];
   pathNodes?: string[];
-  animationStep?: AnimationStep | null;
   onSelectNode?: (id: string | null) => void;
   onSetSource?: (id: string) => void;
   onSetDestination?: (id: string) => void;
@@ -156,7 +154,6 @@ export default function GraphRenderer({
   currentNode = null,
   queueNodes = [],
   pathNodes = [],
-  animationStep = null,
   onSelectNode,
   onSetSource,
   onSetDestination,

@@ -26,6 +26,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [mapId, setMapId] = useState(SAMPLE_MAPS[0].id);
   const [custom, setCustom] = useState<GraphData | null>(null);
+  const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [selectedEdge, setSelectedEdge] = useState<{ source: string; target: string } | null>(null);
+  const [selectedEdgeWeight, setSelectedEdgeWeight] = useState(1);
+
   const mapNodes: NodeModel[] = custom ? custom.nodes : sampleMapNodes(mapId);
   const mapEdges: EdgeModel[] = custom ? custom.edges : sampleMapEdges(mapId);
 
@@ -41,11 +45,72 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const handleImport = (result: { graph: GraphData }) => {
     setCustom(result.graph);
     setMapId("");
+    setNodePositions({});
+    setSelectedEdge(null);
   };
 
   const handleOSMLoad = (graphData: GraphData) => {
     setCustom(graphData);
     setMapId("");
+    setNodePositions({});
+    setSelectedEdge(null);
+  };
+
+  const handleMapChange = (value: string) => {
+    setMapId(value);
+    setCustom(null);
+    setNodePositions({});
+    setSelectedEdge(null);
+  };
+
+  const handleNodeDrag = (id: string, x: number, y: number) => {
+    setNodePositions((prev) => ({ ...prev, [id]: { x, y } }));
+  };
+
+  const handleAddEdge = (source: string, target: string, weight: number) => {
+    const exists = mapEdges.some(
+      (e) => e.source === source && e.target === target,
+    );
+    if (exists) return;
+    setCustom({
+      nodes: mapNodes,
+      edges: [...mapEdges, { source, target, weight }],
+    });
+  };
+
+  const handleRemoveEdge = () => {
+    if (!selectedEdge) return;
+    setCustom({
+      nodes: mapNodes,
+      edges: mapEdges.filter(
+        (e) =>
+          !(
+            e.source === selectedEdge.source &&
+            e.target === selectedEdge.target
+          ),
+      ),
+    });
+    setSelectedEdge(null);
+  };
+
+  const handleSelectedEdgeWeightChange = (weight: number) => {
+    setSelectedEdgeWeight(weight);
+    if (!selectedEdge) return;
+    setCustom({
+      nodes: mapNodes,
+      edges: mapEdges.map((e) =>
+        e.source === selectedEdge.source && e.target === selectedEdge.target
+          ? { ...e, weight }
+          : e,
+      ),
+    });
+  };
+
+  const handleResetGraph = () => {
+    setCustom(null);
+    setNodePositions({});
+    setSelectedEdge(null);
+    setMapId(SAMPLE_MAPS[0].id);
   };
 
   return (
@@ -64,13 +129,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onSourceChange={setSource}
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
-              onMapChange={setMapId}
+              onMapChange={handleMapChange}
               onPlay={playback.play}
               onPause={playback.pause}
               onResume={playback.resume}
               onReset={playback.reset}
               onStepForward={playback.stepForward}
               onStepBackward={playback.stepBackward}
+              nodes={mapNodes}
+              selectedEdge={selectedEdge}
+              selectedEdgeWeight={selectedEdgeWeight}
+              onSelectedEdgeWeightChange={handleSelectedEdgeWeightChange}
+              onRemoveEdge={handleRemoveEdge}
+              onAddEdge={handleAddEdge}
+              onResetGraph={handleResetGraph}
             />
             <ImportMap onImport={handleImport} />
             <OSMImport onLoad={handleOSMLoad} />
@@ -93,6 +165,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onSelectNode={setSelected}
               onSetSource={setSource}
               onSetDestination={setDestination}
+              nodePositions={nodePositions}
+              onNodeDrag={handleNodeDrag}
+              selectedEdge={selectedEdge}
+              onSelectEdge={setSelectedEdge}
             />
           </div>
         </main>
@@ -141,13 +217,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onSourceChange={setSource}
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
-              onMapChange={setMapId}
+              onMapChange={handleMapChange}
               onPlay={playback.play}
               onPause={playback.pause}
               onResume={playback.resume}
               onReset={playback.reset}
               onStepForward={playback.stepForward}
               onStepBackward={playback.stepBackward}
+              nodes={mapNodes}
+              selectedEdge={selectedEdge}
+              selectedEdgeWeight={selectedEdgeWeight}
+              onSelectedEdgeWeightChange={handleSelectedEdgeWeightChange}
+              onRemoveEdge={handleRemoveEdge}
+              onAddEdge={handleAddEdge}
+              onResetGraph={handleResetGraph}
             />
             <ImportMap onImport={handleImport} />
             <OSMImport onLoad={handleOSMLoad} />

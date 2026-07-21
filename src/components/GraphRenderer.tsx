@@ -21,6 +21,10 @@ export interface GraphRendererProps {
   onSelectNode?: (id: string | null) => void;
   onSetSource?: (id: string) => void;
   onSetDestination?: (id: string) => void;
+  nodePositions?: Record<string, { x: number; y: number }>;
+  onNodeDrag?: (id: string, x: number, y: number) => void;
+  selectedEdge?: { source: string; target: string } | null;
+  onSelectEdge?: (edge: { source: string; target: string } | null) => void;
 }
 
 const DEFAULT_WIDTH = 800;
@@ -54,14 +58,26 @@ export default function GraphRenderer({
   onSelectNode,
   onSetSource,
   onSetDestination,
+  nodePositions,
+  onNodeDrag,
+  selectedEdge,
+  onSelectEdge,
 }: GraphRendererProps) {
-  const positions = useNodePositions(nodes, width, height);
+  const computedPositions = useNodePositions(nodes, width, height);
+  const positions = nodePositions ?? computedPositions;
   const [camera, setCamera] = useState<Camera>(IDENTITY);
   const [hovered, setHovered] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(
     null,
   );
+  const nodeDragRef = useRef<{
+    id: string;
+    startX: number;
+    startY: number;
+    nodeStartX: number;
+    nodeStartY: number;
+  } | null>(null);
 
   const bounds = useMemo(() => computeBounds(positions), [positions]);
 
@@ -140,6 +156,49 @@ export default function GraphRenderer({
   const zoomButton = (factor: number) => () =>
     zoomAt(factor, width / 2, height / 2);
 
+  const handleNodePointerDown = useCallback(
+    (e: React.PointerEvent, nodeId: string) => {
+      e.stopPropagation();
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+      const pos = positions.get(nodeId);
+      if (!pos) return;
+      nodeDragRef.current = {
+        id: nodeId,
+        startX: e.clientX,
+        startY: e.clientY,
+        nodeStartX: pos.x,
+        nodeStartY: pos.y,
+      };
+    },
+    [positions],
+  );
+
+  const handleNodePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const drag = nodeDragRef.current;
+      if (!drag) return;
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const dx = ((e.clientX - drag.startX) / rect.width) * width;
+      const dy = ((e.clientY - drag.startY) / rect.height) * height;
+      const newX = drag.nodeStartX + dx / camera.scale;
+      const newY = drag.nodeStartY + dy / camera.scale;
+      onNodeDrag?.(drag.id, newX, newY);
+    },
+    [width, height, camera.scale, onNodeDrag],
+  );
+
+  const handleNodePointerUp = useCallback(() => {
+    nodeDragRef.current = null;
+  }, []);
+
+  const handleEdgeClick = useCallback(
+    (edge: EdgeModel) => {
+      onSelectEdge?.({ source: edge.source, target: edge.target });
+    },
+    [onSelectEdge],
+  );
+
   return (
     <div className="relative flex h-full w-full flex-col">
       <div className="absolute right-2 top-2 z-10 flex gap-1">
@@ -158,9 +217,18 @@ export default function GraphRenderer({
         aria-label="Graph visualization"
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerMove={(e) => {
+          handlePointerMove(e);
+          handleNodePointerMove(e);
+        }}
+        onPointerUp={() => {
+          handlePointerUp();
+          handleNodePointerUp();
+        }}
+        onPointerLeave={() => {
+          handlePointerUp();
+          handleNodePointerUp();
+        }}
         onClick={() => onSelectNode?.(null)}
       >
         <g
@@ -173,24 +241,40 @@ export default function GraphRenderer({
               if (!from || !to) return null;
               const midX = (from.x + to.x) / 2;
               const midY = (from.y + to.y) / 2;
+              const isSelected =
+                selectedEdge?.source === edge.source &&
+                selectedEdge?.target === edge.target;
               return (
-                <g key={`${edge.source}->${edge.target}`}>
+                <g
+                  key={`${edge.source}->${edge.target}`}
+                  onClick={() => handleEdgeClick(edge)}
+                  className="cursor-pointer"
+                >
                   <line
                     x1={from.x}
                     y1={from.y}
                     x2={to.x}
                     y2={to.y}
                     stroke="currentColor"
-                    strokeOpacity={0.35}
-                    strokeWidth={1.5}
+                    strokeOpacity={isSelected ? 0.9 : 0.35}
+                    strokeWidth={isSelected ? 3 : 1.5}
+                  />
+                  <rect
+                    x={midX - 12}
+                    y={midY - 8}
+                    width={24}
+                    height={16}
+                    fill="var(--background)"
+                    opacity={0.8}
                   />
                   <text
                     x={midX}
-                    y={midY - 4}
+                    y={midY + 3}
                     textAnchor="middle"
                     className="fill-current"
                     fontSize={11}
-                    opacity={0.6}
+                    opacity={0.9}
+                    pointerEvents="none"
                   >
                     {edge.weight}
                   </text>
@@ -259,6 +343,7 @@ export default function GraphRenderer({
                     e.preventDefault();
                     onSetDestination?.(node.id);
                   }}
+                  onPointerDown={(e) => handleNodePointerDown(e, node.id)}
                 >
                   <circle
                     r={nodeRadius + (isCurrent ? 8 : isVisited || onPath ? 4 : 0)}

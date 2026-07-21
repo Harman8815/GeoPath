@@ -311,10 +311,10 @@ export default function PathfindingMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapLoaded || !geoJSON) return;
+    if (!map || !mapLoaded) return;
 
     const coordinates: [number, number][] = [];
-    for (const feature of geoJSON.features) {
+    for (const feature of geoJSON?.features ?? []) {
       if (feature.geometry.type === "LineString") {
         for (const coord of feature.geometry.coordinates) {
           coordinates.push(coord as [number, number]);
@@ -330,6 +330,37 @@ export default function PathfindingMap({
       map.fitBounds(bounds, { padding: 50, duration: 1500 });
     }
   }, [mapLoaded, geoJSON]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    let animationId: number;
+    let startTime = performance.now();
+
+    const animate = (time: number) => {
+      const elapsed = (time - startTime) / 1000;
+      const alpha = 0.15 + 0.15 * Math.sin(elapsed * 2);
+      const radius = 14 + 4 * Math.sin(elapsed * 2);
+
+      try {
+        if (map.getLayer("markers-pulse")) {
+          map.setPaintProperty("markers-pulse", "circle-opacity", alpha);
+          map.setPaintProperty("markers-pulse", "circle-radius", radius);
+        }
+      } catch {
+        // layer might not be ready
+      }
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    };
+  }, [mapLoaded]);
 
   return (
     <div

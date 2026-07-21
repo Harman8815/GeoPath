@@ -73,7 +73,6 @@ export default function AppLayout() {
     setStatusMessage(`Loading road network for ${city.displayName.split(",")[0]}...`);
     try {
       const network = await fetchRoadNetwork(city.bbox);
-      setOverpassData(network);
       const graph = convertToGraph(network);
       setGraphData(graph);
       const geo = convertToGeoJSON(network);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PathfindingMap from "@/components/PathfindingMap";
 import SearchBar from "@/components/SearchBar";
@@ -8,11 +8,9 @@ import { useAnimationPlayback } from "@/hooks/useAnimationPlayback";
 import { Graph } from "@/lib/graph";
 import {
   fetchRoadNetwork,
-  searchCities,
   convertToGraph,
   convertToGeoJSON,
   type CityResult,
-  type OverpassResponse,
 } from "@/lib/osm";
 import type { GraphData, NodeModel } from "@/lib/graph/types";
 import { MAP_STYLES, type MapStyleId } from "@/hooks/useMapStyles";
@@ -21,7 +19,6 @@ type SelectionMode = "none" | "source" | "destination";
 
 export default function AppLayout() {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
-  const [overpassData, setOverpassData] = useState<OverpassResponse | null>(null);
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +31,6 @@ export default function AppLayout() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const nodes = useMemo(() => graphData?.nodes ?? [], [graphData]);
-  const edges = useMemo(() => graphData?.edges ?? [], [graphData]);
 
   const graph = useMemo(
     () => (graphData ? Graph.fromData(graphData) : null),

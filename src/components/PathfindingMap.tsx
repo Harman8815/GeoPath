@@ -34,11 +34,15 @@ export default function PathfindingMap({
   const currentStyleRef = useRef(mapStyle);
 
   useEffect(() => {
+    currentStyleRef.current = mapStyle;
+  }, [mapStyle]);
+
+  useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: mapStyle,
+      style: currentStyleRef.current,
       center: [0, 0],
       zoom: 1,
       attributionControl: false,

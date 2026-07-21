@@ -17,6 +17,7 @@ export interface AnimationStep {
   distances: Map<string, number>;
   previous: Map<string, string | null>;
   queue: string[];
+  queueItems: Array<{ item: string; priority: number }>;
   visited: string[];
   description: string;
   path?: string[];
@@ -58,6 +59,7 @@ export function* dijkstraAnimation(
     distances: new Map(distances),
     previous: new Map(previous),
     queue: queueItems.map((q) => q.item),
+    queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
     visited: Array.from(visited),
     description: `Initialize distances. Source ${source} = 0`,
   };
@@ -73,6 +75,7 @@ export function* dijkstraAnimation(
         distances: new Map(distances),
         previous: new Map(previous),
         queue: queueItems.map((q) => q.item),
+        queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
         visited: Array.from(visited),
         description: `Skip already visited ${current}`,
       };
@@ -87,6 +90,7 @@ export function* dijkstraAnimation(
       distances: new Map(distances),
       previous: new Map(previous),
       queue: queueItems.map((q) => q.item),
+      queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
       visited: Array.from(visited),
       description: `Visit node ${current} with distance ${distances.get(current)}`,
     };
@@ -107,6 +111,7 @@ export function* dijkstraAnimation(
         distances: new Map(distances),
         previous: new Map(previous),
         queue: queueItems.map((q) => q.item),
+        queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
         visited: Array.from(visited),
         description: `Explore neighbor ${neighbor} from ${current}`,
       };
@@ -132,6 +137,7 @@ export function* dijkstraAnimation(
           distances: new Map(distances),
           previous: new Map(previous),
           queue: queueItems.map((q) => q.item),
+          queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
           visited: Array.from(visited),
           description: `Relax edge ${edge.source}->${edge.target}: new distance to ${neighbor} = ${newDistance}`,
         };
@@ -144,6 +150,7 @@ export function* dijkstraAnimation(
       distances: new Map(distances),
       previous: new Map(previous),
       queue: queueItems.map((q) => q.item),
+      queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
       visited: Array.from(visited),
       description: `Queue now: [${queueItems.map((q) => `${q.item}:${q.priority}`).join(", ")}]`,
     };
@@ -155,6 +162,7 @@ export function* dijkstraAnimation(
     distances: new Map(distances),
     previous: new Map(previous),
     queue: [],
+    queueItems: [],
     visited: Array.from(visited),
     description: `Dijkstra completed`,
     path: target ? reconstructPath(previous, target) : [],

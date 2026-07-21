@@ -8,6 +8,7 @@ import GraphRenderer from "./GraphRenderer";
 import LiveStatsPanel from "./LiveStatsPanel";
 import DistanceTable from "./DistanceTable";
 import AlgorithmExplanationPanel from "./AlgorithmExplanationPanel";
+import ThemeToggle from "./ThemeToggle";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
 import ImportMap from "./ImportMap";
 import OSMImport from "./OSMImport";
@@ -172,19 +173,7 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <span className="text-base font-semibold">EAF</span>
       </div>
 
-      <ThemeTogglePlaceholder />
+      <ThemeToggle />
     </header>
-  );
-}
-
-function ThemeTogglePlaceholder() {
-  return (
-    <button
-      type="button"
-      aria-label="Toggle theme"
-      className="rounded-full border border-black/10 px-3 py-1 text-sm hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
-    >
-      Theme
-    </button>
   );
 }

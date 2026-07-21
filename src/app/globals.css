@@ -3,24 +3,94 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --border: #e5e5e5;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.theme-light {
+  --background: #ffffff;
+  --foreground: #171717;
+  --border: #e5e5e5;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+}
+
+.theme-dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --border: #262626;
+  --muted: #171717;
+  --muted-foreground: #a3a3a3;
+}
+
+.theme-cyber {
+  --background: #05070a;
+  --foreground: #00f0ff;
+  --border: #1a2332;
+  --muted: #0a1018;
+  --muted-foreground: #5eead4;
+}
+
+.theme-dark,
+.theme-cyber {
+  --color-black: #ededed;
+  --color-white: #0a0a0a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-dark .dark\:border-white\/10,
+.theme-cyber .dark\:border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .dark\:text-white\/40,
+.theme-cyber .dark\:text-white\/40 {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.theme-dark .dark\:text-white\/60,
+.theme-cyber .dark\:text-white\/60 {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.theme-dark .dark\:text-white\/70,
+.theme-cyber .dark\:text-white\/70 {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.theme-dark .dark\:border-white\/15,
+.theme-cyber .dark\:border-white\/15 {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.theme-dark .dark\:hover\:bg-white\/10:hover,
+.theme-cyber .dark\:hover\:bg-white\/10:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .dark\:bg-white\/5,
+.theme-cyber .dark\:bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.theme-dark .dark\:bg-white\/10,
+.theme-cyber .dark\:bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1);
 }

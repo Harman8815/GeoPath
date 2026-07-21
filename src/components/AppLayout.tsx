@@ -185,6 +185,23 @@ export default function AppLayout() {
               Dijkstra Simulator
             </span>
           </motion.div>
+
+          {!graphData && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="pointer-events-none max-w-md"
+            >
+              <div className="rounded-lg bg-white/90 px-4 py-3 text-sm shadow-lg backdrop-blur-sm dark:bg-black/80 dark:text-white">
+                <p className="font-medium">Getting Started</p>
+                <ol className="mt-1 list-inside list-decimal text-black/70 dark:text-white/70">
+                  <li>Search for any city above</li>
+                  <li>Click the map to set Source and Destination</li>
+                  <li>Hit Start to watch Dijkstra explore the roads</li>
+                </ol>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         <div className="flex items-end justify-between gap-4">

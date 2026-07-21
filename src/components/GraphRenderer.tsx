@@ -41,6 +41,108 @@ export interface Camera {
 
 const IDENTITY: Camera = { scale: 1, offsetX: 0, offsetY: 0 };
 
+const GraphNode = ({
+  node,
+  pos,
+  nodeRadius,
+  isSource,
+  isDest,
+  isSelected,
+  isVisited,
+  isCurrent,
+  inQueue,
+  onPath,
+  onSelectNode,
+  onSetSource,
+  onSetDestination,
+  onPointerDown,
+}: {
+  node: NodeModel;
+  pos: { x: number; y: number };
+  nodeRadius: number;
+  isSource: boolean;
+  isDest: boolean;
+  isSelected: boolean;
+  isVisited: boolean;
+  isCurrent: boolean;
+  inQueue: boolean;
+  onPath: boolean;
+  onSelectNode?: (id: string | null) => void;
+  onSetSource?: (id: string) => void;
+  onSetDestination?: (id: string) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
+}) => {
+  let ringColor = "currentColor";
+  let strokeWidth = 2;
+
+  if (isCurrent) {
+    ringColor = "#eab308";
+    strokeWidth = 4;
+  } else if (isSource) {
+    ringColor = "#22c55e";
+    strokeWidth = 3;
+  } else if (isDest) {
+    ringColor = "#ef4444";
+    strokeWidth = 3;
+  } else if (onPath) {
+    ringColor = "#3b82f6";
+    strokeWidth = 3;
+  } else if (isVisited) {
+    ringColor = "#a855f7";
+    strokeWidth = 2;
+  } else if (inQueue) {
+    ringColor = "#f97316";
+    strokeWidth = 2;
+  } else if (isSelected) {
+    ringColor = "#3b82f6";
+    strokeWidth = 3;
+  }
+
+  return (
+    <g
+      transform={`translate(${pos.x}, ${pos.y})`}
+      className="cursor-pointer"
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelectNode?.(node.id);
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onSetSource?.(node.id);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onSetDestination?.(node.id);
+      }}
+      onPointerDown={onPointerDown as (e: React.PointerEvent) => void}
+    >
+      <circle
+        r={nodeRadius + (isCurrent ? 8 : isVisited || onPath ? 4 : 0)}
+        className="fill-none"
+        stroke={ringColor}
+        strokeOpacity={0.7}
+        strokeWidth={2}
+      />
+      <circle
+        r={nodeRadius}
+        className="fill-background stroke-current"
+        stroke={ringColor}
+        strokeWidth={strokeWidth}
+      />
+      <text
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="fill-current"
+        fontSize={12}
+        fontWeight={600}
+        pointerEvents="none"
+      >
+        {node.label ?? node.id}
+      </text>
+    </g>
+  );
+};
+
 export default function GraphRenderer({
   nodes,
   edges,
@@ -66,7 +168,6 @@ export default function GraphRenderer({
   const computedPositions = useNodePositions(nodes, width, height);
   const positions = nodePositions ?? computedPositions;
   const [camera, setCamera] = useState<Camera>(IDENTITY);
-  const [hovered, setHovered] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(
     null,
@@ -80,6 +181,18 @@ export default function GraphRenderer({
   } | null>(null);
 
   const bounds = useMemo(() => computeBounds(positions), [positions]);
+
+  const visitedSet = useMemo(() => new Set(visited), [visited]);
+  const queueNodesSet = useMemo(() => new Set(queueNodes), [queueNodes]);
+  const pathNodesSet = useMemo(() => new Set(pathNodes), [pathNodes]);
+  const sourceNode = useMemo(() => (source ? new Set([source]) : new Set<string>()), [source]);
+  const destNode = useMemo(() => (destination ? new Set([destination]) : new Set<string>()), [destination]);
+  const selectedNode = useMemo(() => (selected ? new Set([selected]) : new Set<string>()), [selected]);
+  const currentNodeSet = useMemo(() => (currentNode ? new Set([currentNode]) : new Set<string>()), [currentNode]);
+  const selectedEdgeSet = useMemo(
+    () => (selectedEdge ? new Set([`${selectedEdge.source}->${selectedEdge.target}`]) : new Set<string>()),
+    [selectedEdge],
+  );
 
   const zoomAt = useCallback(
     (factor: number, cx: number, cy: number) => {
@@ -153,8 +266,9 @@ export default function GraphRenderer({
     setCamera({ scale, offsetX, offsetY });
   }, [bounds, width, height, resetCamera]);
 
-  const zoomButton = (factor: number) => () =>
-    zoomAt(factor, width / 2, height / 2);
+  const zoomButton = useCallback((factor: number) => () =>
+    zoomAt(factor, width / 2, height / 2),
+  [width, height, zoomAt]);
 
   const handleNodePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {
@@ -241,9 +355,7 @@ export default function GraphRenderer({
               if (!from || !to) return null;
               const midX = (from.x + to.x) / 2;
               const midY = (from.y + to.y) / 2;
-              const isSelected =
-                selectedEdge?.source === edge.source &&
-                selectedEdge?.target === edge.target;
+              const isSelected = selectedEdgeSet.has(`${edge.source}->${edge.target}`);
               return (
                 <g
                   key={`${edge.source}->${edge.target}`}
@@ -287,88 +399,24 @@ export default function GraphRenderer({
             {nodes.map((node) => {
               const pos = positions.get(node.id);
               if (!pos) return null;
-              const isSource = node.id === source;
-              const isDest = node.id === destination;
-              const isSelected = node.id === selected;
-              const isVisited = visited.includes(node.id);
-              const isCurrent = node.id === currentNode;
-              const inQueue = queueNodes.includes(node.id);
-              const onPath = pathNodes.includes(node.id);
-
-              let ringColor = "currentColor";
-              let fillColor = "background";
-              let strokeWidth = 2;
-
-              if (isCurrent) {
-                ringColor = "#eab308";
-                strokeWidth = 4;
-              } else if (isSource) {
-                ringColor = "#22c55e";
-                strokeWidth = 3;
-              } else if (isDest) {
-                ringColor = "#ef4444";
-                strokeWidth = 3;
-              } else if (onPath) {
-                ringColor = "#3b82f6";
-                strokeWidth = 3;
-              } else if (isVisited) {
-                ringColor = "#a855f7";
-                strokeWidth = 2;
-              } else if (inQueue) {
-                ringColor = "#f97316";
-                strokeWidth = 2;
-              } else if (isSelected) {
-                ringColor = "#3b82f6";
-                strokeWidth = 3;
-              }
-
               return (
-                <g
+                <GraphNode
                   key={node.id}
-                  transform={`translate(${pos.x}, ${pos.y})`}
-                  className="cursor-pointer"
-                  onPointerEnter={() => setHovered(node.id)}
-                  onPointerLeave={() =>
-                    setHovered((h) => (h === node.id ? null : h))
-                  }
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectNode?.(node.id);
-                  }}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    onSetSource?.(node.id);
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    onSetDestination?.(node.id);
-                  }}
+                  node={node}
+                  pos={pos}
+                  nodeRadius={nodeRadius}
+                  isSource={sourceNode.has(node.id)}
+                  isDest={destNode.has(node.id)}
+                  isSelected={selectedNode.has(node.id)}
+                  isVisited={visitedSet.has(node.id)}
+                  isCurrent={currentNodeSet.has(node.id)}
+                  inQueue={queueNodesSet.has(node.id)}
+                  onPath={pathNodesSet.has(node.id)}
+                  onSelectNode={onSelectNode}
+                  onSetSource={onSetSource}
+                  onSetDestination={onSetDestination}
                   onPointerDown={(e) => handleNodePointerDown(e, node.id)}
-                >
-                  <circle
-                    r={nodeRadius + (isCurrent ? 8 : isVisited || onPath ? 4 : 0)}
-                    className="fill-none"
-                    stroke={ringColor}
-                    strokeOpacity={0.7}
-                    strokeWidth={2}
-                  />
-                  <circle
-                    r={nodeRadius}
-                    className="fill-background stroke-current transition-[stroke]"
-                    stroke={ringColor}
-                    strokeWidth={strokeWidth}
-                  />
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    className="fill-current"
-                    fontSize={12}
-                    fontWeight={600}
-                    pointerEvents="none"
-                  >
-                    {node.label ?? node.id}
-                  </text>
-                </g>
+                />
               );
             })}
           </g>

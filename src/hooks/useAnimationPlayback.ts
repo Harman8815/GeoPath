@@ -43,6 +43,17 @@ export function useAnimationPlayback({
   const [currentIndex, setCurrentIndex] = useState(-1);
   const generatorRef = useRef<Generator<AnimationStep, void, unknown> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const lastTickRef = useRef<number>(0);
+  const statusRef = useRef(status);
+  const stepsRef = useRef(steps);
+  const speedRef = useRef(speed);
+
+  useEffect(() => {
+    statusRef.current = status;
+    stepsRef.current = steps;
+    speedRef.current = speed;
+  }, [status, steps, speed]);
 
   const step = currentIndex >= 0 && currentIndex < steps.length ? steps[currentIndex] : null;
 
@@ -50,6 +61,10 @@ export function useAnimationPlayback({
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
   }, []);
 
@@ -64,6 +79,7 @@ export function useAnimationPlayback({
     setSteps(all);
     setCurrentIndex(0);
     setStatus("paused");
+    void all;
     return all;
   }, [graph, source, target]);
 
@@ -116,30 +132,43 @@ export function useAnimationPlayback({
   }, []);
 
   const setSpeedControl = useCallback((newSpeed: number) => {
-    void newSpeed;
+    speedRef.current = newSpeed;
   }, []);
 
   useEffect(() => {
-    if (status === "playing") {
-      clearTimer();
-      const interval = Math.max(50, 1000 / speed);
-      intervalRef.current = setInterval(() => {
+    if (status !== "playing") return;
+    clearTimer();
+    lastTickRef.current = performance.now();
+    const interval = Math.max(50, 1000 / speedRef.current);
+
+    const tick = (now: number) => {
+      if (statusRef.current !== "playing") return;
+      const elapsed = now - lastTickRef.current;
+      if (elapsed >= interval) {
+        lastTickRef.current = now - (elapsed % interval);
         setCurrentIndex((idx) => {
-          if (idx + 1 >= steps.length) {
+          const currentSteps = stepsRef.current;
+          if (idx + 1 >= currentSteps.length) {
             setStatus("finished");
             clearTimer();
             return idx;
           }
           return idx + 1;
         });
-      }, interval);
-      return () => clearTimer();
-    }
-  }, [status, speed, steps.length, clearTimer]);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      clearTimer();
+    };
+  }, [status, speed, clearTimer]);
 
   useEffect(() => {
     if (autoPlay && status === "idle") {
-      play();
+      const timer = setTimeout(() => play(), 0);
+      return () => clearTimeout(timer);
     }
   }, [autoPlay, status, play]);
 

@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useAnimationPlayback } from "@/hooks/useAnimationPlayback";
-import { cn } from "@/utils";
 import { Graph } from "@/lib/graph";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
+import LiveStatsPanel from "./LiveStatsPanel";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
 import ImportMap from "./ImportMap";
 import OSMImport from "./OSMImport";
@@ -97,7 +97,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <aside className="hidden w-72 shrink-0 border-l border-black/10 p-4 xl:block dark:border-white/10">
           <div className="flex h-full flex-col gap-4 overflow-y-auto">
             <h3 className="text-sm font-semibold">Details</h3>
-            <PanelPlaceholder label="Right Sidebar" />
+            <LiveStatsPanel
+              step={playback.step}
+              status={playback.status}
+              currentIndex={playback.currentIndex}
+              totalSteps={playback.steps.length}
+            />
           </div>
         </aside>
       </div>
@@ -177,17 +182,5 @@ function ThemeTogglePlaceholder() {
     >
       Theme
     </button>
-  );
-}
-
-function PanelPlaceholder({ label }: { label: string }) {
-  return (
-    <div
-      className={cn(
-        "flex h-full min-h-24 items-center justify-center rounded-lg border border-dashed border-black/15 text-sm text-black/40 dark:border-white/15 dark:text-white/40",
-      )}
-    >
-      {label}
-    </div>
   );
 }

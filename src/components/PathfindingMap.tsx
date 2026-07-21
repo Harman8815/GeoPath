@@ -110,11 +110,38 @@ export default function PathfindingMap({
           "line-width": 3,
           "line-opacity": 0.7,
         },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+      });
+
+      map.on("sourcedata", (e) => {
+        if (e.isSourceLoaded && e.sourceId === "explored") {
+          try {
+            map.setPaintProperty("explored", "line-opacity-transition", {
+              duration: 300,
+            });
+          } catch {
+            // ignore if property not set yet
+          }
+        }
       });
 
       map.addSource("path", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "path-glow",
+        type: "line",
+        source: "path",
+        paint: {
+          "line-color": "#3b82f6",
+          "line-width": 8,
+          "line-opacity": 0.3,
+          "line-blur": 4,
+        },
       });
       map.addLayer({
         id: "path",
@@ -124,12 +151,31 @@ export default function PathfindingMap({
           "line-color": "#3b82f6",
           "line-width": 4,
           "line-opacity": 0.9,
+          "line-blur": 1,
         },
       });
 
       map.addSource("markers", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "markers-pulse",
+        type: "circle",
+        source: "markers",
+        paint: {
+          "circle-radius": 16,
+          "circle-color": [
+            "case",
+            ["==", ["get", "type"], "source"],
+            "#22c55e",
+            ["==", ["get", "type"], "destination"],
+            "#ef4444",
+            "#f97316",
+          ],
+          "circle-opacity": 0.2,
+          "circle-blur": 2,
+        },
       });
       map.addLayer({
         id: "markers",

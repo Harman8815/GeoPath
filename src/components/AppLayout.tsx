@@ -58,15 +58,8 @@ export default function AppLayout() {
   );
 
   const exploredEdges = useMemo(() => {
-    const visited = new Set(playback.step?.visited ?? []);
-    const result: Array<{ source: string; target: string }> = [];
-    for (const edge of edges) {
-      if (visited.has(edge.source) || visited.has(edge.target)) {
-        result.push({ source: edge.source, target: edge.target });
-      }
-    }
-    return result;
-  }, [edges, playback.step]);
+    return playback.step?.exploredEdges ?? [];
+  }, [playback.step]);
 
   const pathEdges = useMemo(() => {
     const path = playback.step?.path ?? [];

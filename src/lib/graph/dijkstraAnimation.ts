@@ -20,6 +20,7 @@ export interface AnimationStep {
   visited: string[];
   description: string;
   path?: string[];
+  exploredEdges: Array<{ source: string; target: string }>;
 }
 
 function reconstructPath(previous: Map<string, string | null>, target: string): string[] {
@@ -42,6 +43,7 @@ export function* dijkstraAnimation(
   const visited = new Set<string>();
   const queue = new PriorityQueue<string>();
   const queueItems: Array<{ item: string; priority: number }> = [];
+  const exploredEdges: Array<{ source: string; target: string }> = [];
 
   for (const node of graph.getNodes()) {
     distances.set(node.id, Infinity);
@@ -61,6 +63,7 @@ export function* dijkstraAnimation(
     queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
     visited: Array.from(visited),
     description: `Initialize distances. Source ${source} = 0`,
+    exploredEdges: [...exploredEdges],
   };
 
   while (!queue.isEmpty()) {
@@ -77,6 +80,7 @@ export function* dijkstraAnimation(
         queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
         visited: Array.from(visited),
         description: `Skip already visited ${current}`,
+        exploredEdges: [...exploredEdges],
       };
       continue;
     }
@@ -92,6 +96,7 @@ export function* dijkstraAnimation(
       queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
       visited: Array.from(visited),
       description: `Visit node ${current} with distance ${distances.get(current)}`,
+      exploredEdges: [...exploredEdges],
     };
 
     if (target && current === target) {
@@ -113,6 +118,7 @@ export function* dijkstraAnimation(
         queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
         visited: Array.from(visited),
         description: `Explore neighbor ${neighbor} from ${current}`,
+        exploredEdges: [...exploredEdges],
       };
 
       if (visited.has(neighbor)) {
@@ -129,6 +135,8 @@ export function* dijkstraAnimation(
         queueItems.push({ item: neighbor, priority: newDistance });
         queueItems.sort((a, b) => a.priority - b.priority);
 
+        exploredEdges.push({ source: edge.source, target: edge.target });
+
         yield {
           type: "relax",
           nodeId: current,
@@ -139,6 +147,7 @@ export function* dijkstraAnimation(
           queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
           visited: Array.from(visited),
           description: `Relax edge ${edge.source}->${edge.target}: new distance to ${neighbor} = ${newDistance}`,
+          exploredEdges: [...exploredEdges],
         };
       }
     }
@@ -152,6 +161,7 @@ export function* dijkstraAnimation(
       queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
       visited: Array.from(visited),
       description: `Queue now: [${queueItems.map((q) => `${q.item}:${q.priority}`).join(", ")}]`,
+      exploredEdges: [...exploredEdges],
     };
   }
 
@@ -165,5 +175,6 @@ export function* dijkstraAnimation(
     visited: Array.from(visited),
     description: `Dijkstra completed`,
     path: target ? reconstructPath(previous, target) : [],
+    exploredEdges: [...exploredEdges],
   };
 }

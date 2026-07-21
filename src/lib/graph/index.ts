@@ -6,3 +6,4 @@ export * from "./generate";
 export * from "./maps";
 export * from "./importMap";
 export * from "./dijkstra";
+export * from "./dijkstraAnimation";

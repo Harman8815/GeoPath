@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EAF - Dijkstra Visualizer",
-  description: "Interactive Dijkstra pathfinding algorithm visualizer",
+  title: "GeoPath - Dijkstra Pathfinding Simulator",
+  description: "Interactive Dijkstra pathfinding algorithm visualizer on real-world road networks",
 };
 
 export default function RootLayout({

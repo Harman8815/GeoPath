@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { NodeModel } from "@/lib/graph/types";
-import type { OverpassResponse } from "@/lib/osm/client";
 
 export interface PathfindingMapProps {
   geoJSON: GeoJSON.FeatureCollection | null;
@@ -32,11 +31,7 @@ export default function PathfindingMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const styleRef = useRef(mapStyle);
-
-  useEffect(() => {
-    styleRef.current = mapStyle;
-  }, [mapStyle]);
+  const currentStyleRef = useRef(mapStyle);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -72,8 +67,9 @@ export default function PathfindingMap({
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
-    if (map.getStyle().name !== new URL(styleRef.current).hostname) {
-      map.setStyle(styleRef.current);
+    if (currentStyleRef.current !== mapStyle) {
+      currentStyleRef.current = mapStyle;
+      map.setStyle(mapStyle);
     }
   }, [mapLoaded, mapStyle]);
 
@@ -81,26 +77,26 @@ export default function PathfindingMap({
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
-    if (map.getSource("roads")) {
-      (map.getSource("roads") as maplibregl.GeoJSONSource).setData(geoJSON ?? { type: "FeatureCollection", features: [] });
-    } else if (geoJSON) {
-      map.addSource("roads", {
-        type: "geojson",
-        data: geoJSON,
-      });
-      map.addLayer({
-        id: "roads",
-        type: "line",
-        source: "roads",
-        paint: {
-          "line-color": "#888888",
-          "line-width": 1.5,
-          "line-opacity": 0.6,
-        },
-      });
-    }
+    const addLayers = () => {
+      if (map.getSource("roads")) return;
 
-    if (!map.getSource("explored")) {
+      if (geoJSON) {
+        map.addSource("roads", {
+          type: "geojson",
+          data: geoJSON,
+        });
+        map.addLayer({
+          id: "roads",
+          type: "line",
+          source: "roads",
+          paint: {
+            "line-color": "#888888",
+            "line-width": 1.5,
+            "line-opacity": 0.6,
+          },
+        });
+      }
+
       map.addSource("explored", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -115,9 +111,7 @@ export default function PathfindingMap({
           "line-opacity": 0.7,
         },
       });
-    }
 
-    if (!map.getSource("path")) {
       map.addSource("path", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -132,9 +126,7 @@ export default function PathfindingMap({
           "line-opacity": 0.9,
         },
       });
-    }
 
-    if (!map.getSource("markers")) {
       map.addSource("markers", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -157,7 +149,19 @@ export default function PathfindingMap({
           "circle-stroke-color": "#ffffff",
         },
       });
-    }
+    };
+
+    addLayers();
+
+    const onStyleLoad = () => {
+      addLayers();
+    };
+
+    map.on("style.load", onStyleLoad);
+
+    return () => {
+      map.off("style.load", onStyleLoad);
+    };
   }, [mapLoaded, geoJSON]);
 
   useEffect(() => {
@@ -181,10 +185,13 @@ export default function PathfindingMap({
       };
     }).filter(Boolean) as GeoJSON.Feature[];
 
-    (map.getSource("explored") as maplibregl.GeoJSONSource).setData({
-      type: "FeatureCollection",
-      features: exploredFeatures,
-    });
+    const source = map.getSource("explored");
+    if (source) {
+      (source as maplibregl.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: exploredFeatures,
+      });
+    }
   }, [mapLoaded, exploredEdges, nodes]);
 
   useEffect(() => {
@@ -208,10 +215,13 @@ export default function PathfindingMap({
       };
     }).filter(Boolean) as GeoJSON.Feature[];
 
-    (map.getSource("path") as maplibregl.GeoJSONSource).setData({
-      type: "FeatureCollection",
-      features: pathFeatures,
-    });
+    const source = map.getSource("path");
+    if (source) {
+      (source as maplibregl.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: pathFeatures,
+      });
+    }
   }, [mapLoaded, pathEdges, nodes]);
 
   useEffect(() => {
@@ -240,10 +250,13 @@ export default function PathfindingMap({
       });
     }
 
-    (map.getSource("markers") as maplibregl.GeoJSONSource).setData({
-      type: "FeatureCollection",
-      features: markerFeatures,
-    });
+    const source = map.getSource("markers");
+    if (source) {
+      (source as maplibregl.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: markerFeatures,
+      });
+    }
   }, [mapLoaded, sourceNode, destinationNode]);
 
   useEffect(() => {

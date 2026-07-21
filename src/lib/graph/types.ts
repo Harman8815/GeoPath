@@ -3,6 +3,8 @@ export interface NodeModel {
   label?: string;
   x?: number;
   y?: number;
+  lat?: number;
+  lon?: number;
 }
 
 export interface EdgeModel {

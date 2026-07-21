@@ -1,0 +1,278 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import type { NodeModel } from "@/lib/graph/types";
+import type { OverpassResponse } from "@/lib/osm/client";
+
+export interface PathfindingMapProps {
+  geoJSON: GeoJSON.FeatureCollection | null;
+  exploredEdges: Array<{ source: string; target: string }>;
+  pathEdges: Array<{ source: string; target: string }>;
+  nodes: NodeModel[];
+  sourceNode: NodeModel | null;
+  destinationNode: NodeModel | null;
+  onMapClick: (lngLat: { lng: number; lat: number }) => void;
+  mapStyle?: string;
+  className?: string;
+}
+
+export default function PathfindingMap({
+  geoJSON,
+  exploredEdges,
+  pathEdges,
+  nodes,
+  sourceNode,
+  destinationNode,
+  onMapClick,
+  mapStyle = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  className = "",
+}: PathfindingMapProps) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const styleRef = useRef(mapStyle);
+
+  useEffect(() => {
+    styleRef.current = mapStyle;
+  }, [mapStyle]);
+
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: mapStyle,
+      center: [0, 0],
+      zoom: 1,
+      attributionControl: false,
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+
+    map.on("load", () => {
+      setMapLoaded(true);
+    });
+
+    map.on("click", (e) => {
+      onMapClick({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+    });
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [onMapClick]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    if (map.getStyle().name !== new URL(styleRef.current).hostname) {
+      map.setStyle(styleRef.current);
+    }
+  }, [mapLoaded, mapStyle]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    if (map.getSource("roads")) {
+      (map.getSource("roads") as maplibregl.GeoJSONSource).setData(geoJSON ?? { type: "FeatureCollection", features: [] });
+    } else if (geoJSON) {
+      map.addSource("roads", {
+        type: "geojson",
+        data: geoJSON,
+      });
+      map.addLayer({
+        id: "roads",
+        type: "line",
+        source: "roads",
+        paint: {
+          "line-color": "#888888",
+          "line-width": 1.5,
+          "line-opacity": 0.6,
+        },
+      });
+    }
+
+    if (!map.getSource("explored")) {
+      map.addSource("explored", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "explored",
+        type: "line",
+        source: "explored",
+        paint: {
+          "line-color": "#a855f7",
+          "line-width": 3,
+          "line-opacity": 0.7,
+        },
+      });
+    }
+
+    if (!map.getSource("path")) {
+      map.addSource("path", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "path",
+        type: "line",
+        source: "path",
+        paint: {
+          "line-color": "#3b82f6",
+          "line-width": 4,
+          "line-opacity": 0.9,
+        },
+      });
+    }
+
+    if (!map.getSource("markers")) {
+      map.addSource("markers", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "markers",
+        type: "circle",
+        source: "markers",
+        paint: {
+          "circle-radius": 8,
+          "circle-color": [
+            "case",
+            ["==", ["get", "type"], "source"],
+            "#22c55e",
+            ["==", ["get", "type"], "destination"],
+            "#ef4444",
+            "#f97316",
+          ],
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#ffffff",
+        },
+      });
+    }
+  }, [mapLoaded, geoJSON]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const exploredFeatures = exploredEdges.map((edge) => {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      const targetNode = nodes.find((n) => n.id === edge.target);
+      if (!sourceNode || !targetNode || sourceNode.lat == null || sourceNode.lon == null || targetNode.lat == null || targetNode.lon == null) return null;
+      return {
+        type: "Feature" as const,
+        properties: {},
+        geometry: {
+          type: "LineString" as const,
+          coordinates: [
+            [sourceNode.lon, sourceNode.lat],
+            [targetNode.lon, targetNode.lat],
+          ],
+        },
+      };
+    }).filter(Boolean) as GeoJSON.Feature[];
+
+    (map.getSource("explored") as maplibregl.GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features: exploredFeatures,
+    });
+  }, [mapLoaded, exploredEdges, nodes]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const pathFeatures = pathEdges.map((edge) => {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      const targetNode = nodes.find((n) => n.id === edge.target);
+      if (!sourceNode || !targetNode || sourceNode.lat == null || sourceNode.lon == null || targetNode.lat == null || targetNode.lon == null) return null;
+      return {
+        type: "Feature" as const,
+        properties: {},
+        geometry: {
+          type: "LineString" as const,
+          coordinates: [
+            [sourceNode.lon, sourceNode.lat],
+            [targetNode.lon, targetNode.lat],
+          ],
+        },
+      };
+    }).filter(Boolean) as GeoJSON.Feature[];
+
+    (map.getSource("path") as maplibregl.GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features: pathFeatures,
+    });
+  }, [mapLoaded, pathEdges, nodes]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const markerFeatures: GeoJSON.Feature[] = [];
+    if (sourceNode && sourceNode.lat != null && sourceNode.lon != null) {
+      markerFeatures.push({
+        type: "Feature",
+        properties: { type: "source" },
+        geometry: {
+          type: "Point",
+          coordinates: [sourceNode.lon, sourceNode.lat],
+        },
+      });
+    }
+    if (destinationNode && destinationNode.lat != null && destinationNode.lon != null) {
+      markerFeatures.push({
+        type: "Feature",
+        properties: { type: "destination" },
+        geometry: {
+          type: "Point",
+          coordinates: [destinationNode.lon, destinationNode.lat],
+        },
+      });
+    }
+
+    (map.getSource("markers") as maplibregl.GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features: markerFeatures,
+    });
+  }, [mapLoaded, sourceNode, destinationNode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || !geoJSON) return;
+
+    const coordinates: [number, number][] = [];
+    for (const feature of geoJSON.features) {
+      if (feature.geometry.type === "LineString") {
+        for (const coord of feature.geometry.coordinates) {
+          coordinates.push(coord as [number, number]);
+        }
+      }
+    }
+
+    if (coordinates.length > 0) {
+      const bounds = new maplibregl.LngLatBounds();
+      for (const coord of coordinates) {
+        bounds.extend(coord);
+      }
+      map.fitBounds(bounds, { padding: 50, duration: 1500 });
+    }
+  }, [mapLoaded, geoJSON]);
+
+  return (
+    <div
+      ref={mapContainer}
+      className={`h-full w-full ${className}`}
+      style={{ minHeight: "400px" }}
+    />
+  );
+}

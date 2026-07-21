@@ -129,7 +129,7 @@ export function convertToGraph(data: OverpassResponse): GraphData {
     nodeIds.add(key);
     const x = (lon - minLon) / spanLon;
     const y = (maxLat - lat) / spanLat;
-    nodes.push({ id: key, label: key, x, y });
+    nodes.push({ id: key, label: key, x, y, lat, lon });
   }
 
   for (const el of data.elements) {
@@ -146,4 +146,45 @@ export function convertToGraph(data: OverpassResponse): GraphData {
   }
 
   return { nodes, edges };
+}
+
+export function convertToGeoJSON(data: OverpassResponse): GeoJSON.FeatureCollection {
+  const coords = new Map<number, [number, number]>();
+  for (const el of data.elements) {
+    if (el.type === "node") {
+      coords.set(el.id, [el.lon, el.lat]);
+    }
+  }
+
+  const features: GeoJSON.Feature[] = [];
+
+  for (const el of data.elements) {
+    if (el.type !== "way" || !el.nodes || el.nodes.length < 2) continue;
+    const motorized = el.tags && "highway" in el.tags;
+    if (!motorized) continue;
+
+    const lineCoords: [number, number][] = [];
+    for (const nodeId of el.nodes) {
+      const c = coords.get(nodeId);
+      if (c) lineCoords.push(c);
+    }
+    if (lineCoords.length < 2) continue;
+
+    features.push({
+      type: "Feature",
+      properties: {
+        id: el.id,
+        highway: el.tags?.highway ?? "road",
+      },
+      geometry: {
+        type: "LineString",
+        coordinates: lineCoords,
+      },
+    });
+  }
+
+  return {
+    type: "FeatureCollection",
+    features,
+  };
 }

@@ -7,6 +7,7 @@ import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
 import LiveStatsPanel from "./LiveStatsPanel";
 import DistanceTable from "./DistanceTable";
+import AlgorithmExplanationPanel from "./AlgorithmExplanationPanel";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
 import ImportMap from "./ImportMap";
 import OSMImport from "./OSMImport";
@@ -105,6 +106,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               totalSteps={playback.steps.length}
             />
             <DistanceTable step={playback.step} />
+            <AlgorithmExplanationPanel step={playback.step} status={playback.status} />
           </div>
         </aside>
       </div>

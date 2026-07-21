@@ -6,6 +6,7 @@ import { Graph } from "@/lib/graph";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
 import LiveStatsPanel from "./LiveStatsPanel";
+import DistanceTable from "./DistanceTable";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
 import ImportMap from "./ImportMap";
 import OSMImport from "./OSMImport";
@@ -103,6 +104,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               currentIndex={playback.currentIndex}
               totalSteps={playback.steps.length}
             />
+            <DistanceTable step={playback.step} />
           </div>
         </aside>
       </div>

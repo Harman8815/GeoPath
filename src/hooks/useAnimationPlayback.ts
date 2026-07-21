@@ -135,11 +135,20 @@ export function useAnimationPlayback({
     speedRef.current = newSpeed;
   }, []);
 
+  const getInterval = useCallback(() => {
+    const totalSteps = stepsRef.current.length;
+    if (totalSteps === 0) return 500;
+    const targetDuration = 15000;
+    const adaptiveInterval = targetDuration / totalSteps;
+    const baseInterval = Math.max(10, Math.min(500, adaptiveInterval));
+    return Math.max(10, baseInterval / speedRef.current);
+  }, []);
+
   useEffect(() => {
     if (status !== "playing") return;
     clearTimer();
     lastTickRef.current = performance.now();
-    const interval = Math.max(50, 1000 / speedRef.current);
+    const interval = getInterval();
 
     const tick = (now: number) => {
       if (statusRef.current !== "playing") return;
@@ -163,7 +172,7 @@ export function useAnimationPlayback({
     return () => {
       clearTimer();
     };
-  }, [status, speed, clearTimer]);
+  }, [status, speed, clearTimer, getInterval]);
 
   useEffect(() => {
     if (autoPlay && status === "idle") {

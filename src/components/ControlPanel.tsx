@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 export interface ControlPanelProps {
   source: string;
   destination: string;
@@ -16,6 +18,13 @@ export interface ControlPanelProps {
   onReset?: () => void;
   onStepForward?: () => void;
   onStepBackward?: () => void;
+  nodes?: Array<{ id: string; label?: string }>;
+  selectedEdge?: { source: string; target: string } | null;
+  selectedEdgeWeight?: number;
+  onSelectedEdgeWeightChange?: (weight: number) => void;
+  onRemoveEdge?: () => void;
+  onAddEdge?: (source: string, target: string, weight: number) => void;
+  onResetGraph?: () => void;
 }
 
 const defaultNodes = ["A", "B", "C", "D", "E", "F", "G"];
@@ -36,7 +45,24 @@ export default function ControlPanel({
   onReset,
   onStepForward,
   onStepBackward,
+  nodes = defaultNodes.map((id) => ({ id })),
+  selectedEdge,
+  selectedEdgeWeight = 1,
+  onSelectedEdgeWeightChange,
+  onRemoveEdge,
+  onAddEdge,
+  onResetGraph,
 }: ControlPanelProps) {
+  const [newSource, setNewSource] = useState(defaultNodes[0]);
+  const [newTarget, setNewTarget] = useState(defaultNodes[1]);
+  const [newWeight, setNewWeight] = useState(1);
+
+  const handleAddEdge = () => {
+    if (newSource === newTarget) return;
+    onAddEdge?.(newSource, newTarget, newWeight);
+    setNewWeight(1);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Section title="Transport Controls">
@@ -97,6 +123,66 @@ export default function ControlPanel({
             onChange={(v) => onDestinationChange?.(v)}
           />
         </label>
+      </Section>
+
+      <Section title="Graph Editor">
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-black/60 dark:text-white/60">Source</span>
+              <Select
+                value={newSource}
+                options={nodes.map((n) => n.id)}
+                labels={nodes.map((n) => n.label ?? n.id)}
+                onChange={(v) => setNewSource(v)}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-black/60 dark:text-white/60">Target</span>
+              <Select
+                value={newTarget}
+                options={nodes.map((n) => n.id)}
+                labels={nodes.map((n) => n.label ?? n.id)}
+                onChange={(v) => setNewTarget(v)}
+              />
+            </label>
+          </div>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-black/60 dark:text-white/60">Weight</span>
+            <input
+              type="number"
+              min={1}
+              value={newWeight}
+              onChange={(e) => setNewWeight(Number(e.target.value))}
+              className="rounded-md border border-black/10 bg-background px-3 py-2 text-sm dark:border-white/10"
+            />
+          </label>
+          <ControlButton label="Add Edge" onClick={handleAddEdge} />
+        </div>
+
+        {selectedEdge && (
+          <div className="flex flex-col gap-2">
+            <div className="text-sm">
+              <span className="text-black/60 dark:text-white/60">Selected: </span>
+              <span className="font-medium">
+                {selectedEdge.source} → {selectedEdge.target}
+              </span>
+            </div>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-black/60 dark:text-white/60">Weight</span>
+              <input
+                type="number"
+                min={1}
+                value={selectedEdgeWeight}
+                onChange={(e) => onSelectedEdgeWeightChange?.(Number(e.target.value))}
+                className="rounded-md border border-black/10 bg-background px-3 py-2 text-sm dark:border-white/10"
+              />
+            </label>
+            <ControlButton label="Remove Edge" onClick={onRemoveEdge} />
+          </div>
+        )}
+
+        <ControlButton label="Reset Graph" onClick={onResetGraph} />
       </Section>
     </div>
   );

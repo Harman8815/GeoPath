@@ -19,6 +19,17 @@ export interface AnimationStep {
   queue: string[];
   visited: string[];
   description: string;
+  path?: string[];
+}
+
+function reconstructPath(previous: Map<string, string | null>, target: string): string[] {
+  const path: string[] = [];
+  let current: string | null = target;
+  while (current !== null) {
+    path.unshift(current);
+    current = previous.get(current) ?? null;
+  }
+  return path;
 }
 
 export function* dijkstraAnimation(
@@ -146,5 +157,6 @@ export function* dijkstraAnimation(
     queue: [],
     visited: Array.from(visited),
     description: `Dijkstra completed`,
+    path: target ? reconstructPath(previous, target) : [],
   };
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { EdgeModel, NodeModel } from "@/lib/graph";
+import type { AnimationStep } from "@/lib/graph/dijkstraAnimation";
 
 export interface GraphRendererProps {
   nodes: NodeModel[];
@@ -12,6 +13,11 @@ export interface GraphRendererProps {
   source?: string | null;
   destination?: string | null;
   selected?: string | null;
+  visited?: string[];
+  currentNode?: string | null;
+  queueNodes?: string[];
+  pathNodes?: string[];
+  animationStep?: AnimationStep | null;
   onSelectNode?: (id: string | null) => void;
   onSetSource?: (id: string) => void;
   onSetDestination?: (id: string) => void;
@@ -40,6 +46,11 @@ export default function GraphRenderer({
   source = null,
   destination = null,
   selected = null,
+  visited = [],
+  currentNode = null,
+  queueNodes = [],
+  pathNodes = [],
+  animationStep = null,
   onSelectNode,
   onSetSource,
   onSetDestination,
@@ -195,14 +206,38 @@ export default function GraphRenderer({
               const isSource = node.id === source;
               const isDest = node.id === destination;
               const isSelected = node.id === selected;
-              const isHovered = node.id === hovered;
-              const ringColor = isSource
-                ? "#22c55e"
-                : isDest
-                  ? "#ef4444"
-                  : isSelected
-                    ? "#3b82f6"
-                    : "currentColor";
+              const isVisited = visited.includes(node.id);
+              const isCurrent = node.id === currentNode;
+              const inQueue = queueNodes.includes(node.id);
+              const onPath = pathNodes.includes(node.id);
+
+              let ringColor = "currentColor";
+              let fillColor = "background";
+              let strokeWidth = 2;
+
+              if (isCurrent) {
+                ringColor = "#eab308";
+                strokeWidth = 4;
+              } else if (isSource) {
+                ringColor = "#22c55e";
+                strokeWidth = 3;
+              } else if (isDest) {
+                ringColor = "#ef4444";
+                strokeWidth = 3;
+              } else if (onPath) {
+                ringColor = "#3b82f6";
+                strokeWidth = 3;
+              } else if (isVisited) {
+                ringColor = "#a855f7";
+                strokeWidth = 2;
+              } else if (inQueue) {
+                ringColor = "#f97316";
+                strokeWidth = 2;
+              } else if (isSelected) {
+                ringColor = "#3b82f6";
+                strokeWidth = 3;
+              }
+
               return (
                 <g
                   key={node.id}
@@ -225,22 +260,18 @@ export default function GraphRenderer({
                     onSetDestination?.(node.id);
                   }}
                 >
-                  {(isHovered || isSelected || isSource || isDest) && (
-                    <circle
-                      r={nodeRadius + (isHovered ? 6 : 4)}
-                      className="fill-none"
-                      stroke={ringColor}
-                      strokeOpacity={0.6}
-                      strokeWidth={2}
-                    />
-                  )}
+                  <circle
+                    r={nodeRadius + (isCurrent ? 8 : isVisited || onPath ? 4 : 0)}
+                    className="fill-none"
+                    stroke={ringColor}
+                    strokeOpacity={0.7}
+                    strokeWidth={2}
+                  />
                   <circle
                     r={nodeRadius}
                     className="fill-background stroke-current transition-[stroke]"
                     stroke={ringColor}
-                    strokeWidth={
-                      isSource || isDest || isSelected ? 3 : 2
-                    }
+                    strokeWidth={strokeWidth}
                   />
                   <text
                     textAnchor="middle"

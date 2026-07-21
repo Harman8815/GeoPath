@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useAnimationPlayback } from "@/hooks/useAnimationPlayback";
 import { cn } from "@/utils";
+import { Graph } from "@/lib/graph";
 import ControlPanel from "./ControlPanel";
 import GraphRenderer from "./GraphRenderer";
 import { SAMPLE_MAPS, sampleMapNodes, sampleMapEdges } from "@/lib/graph";
@@ -24,13 +26,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const mapNodes: NodeModel[] = custom ? custom.nodes : sampleMapNodes(mapId);
   const mapEdges: EdgeModel[] = custom ? custom.edges : sampleMapEdges(mapId);
 
+  const graph = useMemo(() => Graph.fromData({ nodes: mapNodes, edges: mapEdges }), [mapNodes, mapEdges]);
+
+  const playback = useAnimationPlayback({
+    graph,
+    source,
+    target: destination,
+    speed,
+  });
+
   const handleImport = (result: { graph: GraphData }) => {
     setCustom(result.graph);
     setMapId("");
   };
 
-  const handleOSMLoad = (graph: GraphData) => {
-    setCustom(graph);
+  const handleOSMLoad = (graphData: GraphData) => {
+    setCustom(graphData);
     setMapId("");
   };
 
@@ -51,6 +62,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
               onMapChange={setMapId}
+              onPlay={playback.play}
+              onPause={playback.pause}
+              onResume={playback.resume}
+              onReset={playback.reset}
+              onStepForward={playback.stepForward}
+              onStepBackward={playback.stepBackward}
             />
             <ImportMap onImport={handleImport} />
             <OSMImport onLoad={handleOSMLoad} />
@@ -65,6 +82,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
               source={source}
               destination={destination}
               selected={selected}
+              visited={playback.step?.visited ?? []}
+              currentNode={playback.step?.nodeId ?? null}
+              queueNodes={playback.step?.queue ?? []}
+              pathNodes={playback.step ? (playback.step.type === "finish" ? playback.step.path ?? [] : []) : []}
+              animationStep={playback.step}
               onSelectNode={setSelected}
               onSetSource={setSource}
               onSetDestination={setDestination}
@@ -110,6 +132,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onDestinationChange={setDestination}
               onSpeedChange={setSpeed}
               onMapChange={setMapId}
+              onPlay={playback.play}
+              onPause={playback.pause}
+              onResume={playback.resume}
+              onReset={playback.reset}
+              onStepForward={playback.stepForward}
+              onStepBackward={playback.stepBackward}
             />
             <ImportMap onImport={handleImport} />
             <OSMImport onLoad={handleOSMLoad} />

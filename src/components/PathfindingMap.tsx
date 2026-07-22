@@ -82,123 +82,130 @@ export default function PathfindingMap({
     if (!map || !mapLoaded) return;
 
     const addLayers = () => {
+      if (!map.isStyleLoaded()) return;
       if (map.getSource("roads")) return;
 
-      if (geoJSON) {
-        map.addSource("roads", {
+      try {
+        if (geoJSON) {
+          map.addSource("roads", {
+            type: "geojson",
+            data: geoJSON,
+          });
+          map.addLayer({
+            id: "roads",
+            type: "line",
+            source: "roads",
+            paint: {
+              "line-color": "#888888",
+              "line-width": 1.5,
+              "line-opacity": 0.6,
+            },
+          });
+        }
+
+        map.addSource("explored", {
           type: "geojson",
-          data: geoJSON,
+          data: { type: "FeatureCollection", features: [] },
         });
         map.addLayer({
-          id: "roads",
+          id: "explored",
           type: "line",
-          source: "roads",
+          source: "explored",
           paint: {
-            "line-color": "#888888",
-            "line-width": 1.5,
-            "line-opacity": 0.6,
+            "line-color": "#a855f7",
+            "line-width": 3,
+            "line-opacity": 0.7,
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
           },
         });
-      }
 
-      map.addSource("explored", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "explored",
-        type: "line",
-        source: "explored",
-        paint: {
-          "line-color": "#a855f7",
-          "line-width": 3,
-          "line-opacity": 0.7,
-        },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
-      });
-
-      map.on("sourcedata", (e) => {
-        if (e.isSourceLoaded && e.sourceId === "explored") {
-          try {
-            map.setPaintProperty("explored", "line-opacity-transition", {
-              duration: 300,
-            });
-          } catch {
-            // ignore if property not set yet
+        map.on("sourcedata", (e) => {
+          if (e.isSourceLoaded && e.sourceId === "explored") {
+            try {
+              map.setPaintProperty("explored", "line-opacity-transition", {
+                duration: 300,
+              });
+            } catch {
+              // ignore if property not set yet
+            }
           }
+        });
+
+        map.addSource("path", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+        });
+        map.addLayer({
+          id: "path-glow",
+          type: "line",
+          source: "path",
+          paint: {
+            "line-color": "#3b82f6",
+            "line-width": 8,
+            "line-opacity": 0.3,
+            "line-blur": 4,
+          },
+        });
+        map.addLayer({
+          id: "path",
+          type: "line",
+          source: "path",
+          paint: {
+            "line-color": "#3b82f6",
+            "line-width": 4,
+            "line-opacity": 0.9,
+            "line-blur": 1,
+          },
+        });
+
+        map.addSource("markers", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+        });
+        map.addLayer({
+          id: "markers-pulse",
+          type: "circle",
+          source: "markers",
+          paint: {
+            "circle-radius": 16,
+            "circle-color": [
+              "case",
+              ["==", ["get", "type"], "source"],
+              "#22c55e",
+              ["==", ["get", "type"], "destination"],
+              "#ef4444",
+              "#f97316",
+            ],
+            "circle-opacity": 0.2,
+            "circle-blur": 2,
+          },
+        });
+        map.addLayer({
+          id: "markers",
+          type: "circle",
+          source: "markers",
+          paint: {
+            "circle-radius": 8,
+            "circle-color": [
+              "case",
+              ["==", ["get", "type"], "source"],
+              "#22c55e",
+              ["==", ["get", "type"], "destination"],
+              "#ef4444",
+              "#f97316",
+            ],
+            "circle-stroke-width": 3,
+            "circle-stroke-color": "#ffffff",
+          },
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("Style is not done loading")) {
+          map.once("style.load", () => addLayers());
         }
-      });
-
-      map.addSource("path", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "path-glow",
-        type: "line",
-        source: "path",
-        paint: {
-          "line-color": "#3b82f6",
-          "line-width": 8,
-          "line-opacity": 0.3,
-          "line-blur": 4,
-        },
-      });
-      map.addLayer({
-        id: "path",
-        type: "line",
-        source: "path",
-        paint: {
-          "line-color": "#3b82f6",
-          "line-width": 4,
-          "line-opacity": 0.9,
-          "line-blur": 1,
-        },
-      });
-
-      map.addSource("markers", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "markers-pulse",
-        type: "circle",
-        source: "markers",
-        paint: {
-          "circle-radius": 16,
-          "circle-color": [
-            "case",
-            ["==", ["get", "type"], "source"],
-            "#22c55e",
-            ["==", ["get", "type"], "destination"],
-            "#ef4444",
-            "#f97316",
-          ],
-          "circle-opacity": 0.2,
-          "circle-blur": 2,
-        },
-      });
-      map.addLayer({
-        id: "markers",
-        type: "circle",
-        source: "markers",
-        paint: {
-          "circle-radius": 8,
-          "circle-color": [
-            "case",
-            ["==", ["get", "type"], "source"],
-            "#22c55e",
-            ["==", ["get", "type"], "destination"],
-            "#ef4444",
-            "#f97316",
-          ],
-          "circle-stroke-width": 3,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
+      }
     };
 
     addLayers();
@@ -336,7 +343,7 @@ export default function PathfindingMap({
     if (!map || !mapLoaded) return;
 
     let animationId: number;
-    let startTime = performance.now();
+    const startTime = performance.now();
 
     const animate = (time: number) => {
       const elapsed = (time - startTime) / 1000;

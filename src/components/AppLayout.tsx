@@ -10,6 +10,7 @@ import {
   fetchRoadNetwork,
   convertToGraph,
   convertToGeoJSON,
+  distanceKm,
   type CityResult,
 } from "@/lib/osm";
 import type { GraphData, NodeModel } from "@/lib/graph/types";
@@ -29,6 +30,19 @@ export default function AppLayout() {
   const [speed, setSpeed] = useState(1);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const debugRef = useRef<HTMLDivElement | null>(null);
+
+  const appendDebug = useCallback((msg: string) => {
+    const ts = new Date().toLocaleTimeString();
+    setDebugLogs((prev) => [...prev.slice(-200), `[${ts}] ${msg}`]);
+  }, []);
+
+  useEffect(() => {
+    if (debugRef.current) {
+      debugRef.current.scrollTop = debugRef.current.scrollHeight;
+    }
+  }, [debugLogs]);
 
   const nodes = useMemo(() => graphData?.nodes ?? [], [graphData]);
 
@@ -81,6 +95,7 @@ export default function AppLayout() {
     setLoading(true);
     setError(null);
     setStatusMessage(`Loading road network for ${city.displayName.split(",")[0]}...`);
+    console.log("[CitySearch] Searching:", city.displayName);
     try {
       const network = await fetchRoadNetwork(city.bbox);
       const graph = convertToGraph(network);
@@ -90,16 +105,19 @@ export default function AppLayout() {
       setSourceId(null);
       setDestinationId(null);
       playbackRef.current.reset();
-      setStatusMessage(
-        `Loaded ${graph.nodes.length} intersections, ${graph.edges.length} road segments`,
-      );
+      const msg = `Loaded ${graph.nodes.length} intersections, ${graph.edges.length} road segments`;
+      setStatusMessage(msg);
+      console.log("[CitySearch]", msg);
+      appendDebug(`[CitySearch] ${msg}`);
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load road network.");
+      const msg = err instanceof Error ? err.message : "Failed to load road network.";
+      setError(msg);
+      console.log("[CitySearch] Error:", msg);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [appendDebug]);
 
   const handleMapClick = useCallback(
     (lngLat: { lng: number; lat: number }) => {
@@ -115,26 +133,54 @@ export default function AppLayout() {
         }
       }
 
-      if (closest) {
-        if (selectionMode === "source") {
-          setSourceId(closest.node.id);
-          setDestinationId(null);
-          playbackRef.current.reset();
-        } else if (selectionMode === "destination") {
-          if (closest.node.id === sourceIdRef.current) return;
-          setDestinationId(closest.node.id);
-        }
-        setSelectionMode("none");
+      if (!closest) return;
+
+      const nodeLat = closest.node.lat;
+      const nodeLon = closest.node.lon;
+      const snapDistanceM = nodeLat != null && nodeLon != null
+        ? distanceKm(lngLat.lat, lngLat.lng, nodeLat, nodeLon) * 1000
+        : Infinity;
+
+      console.log("[MapClick] raw:", lngLat, "snapped to:", closest.node.id, "distance_m:", snapDistanceM.toFixed(1));
+
+      if (snapDistanceM > 400) {
+        const msg = "Snap too far: " + snapDistanceM.toFixed(0) + "m. Try clicking closer to a road.";
+        setError(msg);
+        console.warn("[MapClick]", msg);
+        setTimeout(() => setError(null), 3000);
+        return;
       }
+
+      if (selectionMode === "source") {
+        setSourceId(closest.node.id);
+        setDestinationId(null);
+        playbackRef.current.reset();
+        const msg = "Source set: " + closest.node.id + " (" + (nodeLat ?? 0).toFixed(5) + ", " + (nodeLon ?? 0).toFixed(5) + ")";
+        setStatusMessage(msg);
+        console.log("[MapClick]", msg);
+        appendDebug("[Source] " + closest.node.id + " " + snapDistanceM.toFixed(1) + "m");
+      } else if (selectionMode === "destination") {
+        if (closest.node.id === sourceIdRef.current) return;
+        setDestinationId(closest.node.id);
+        const msg = "Destination set: " + closest.node.id + " (" + (nodeLat ?? 0).toFixed(5) + ", " + (nodeLon ?? 0).toFixed(5) + ")";
+        setStatusMessage(msg);
+        console.log("[MapClick]", msg);
+        appendDebug("[Dest] " + closest.node.id + " " + snapDistanceM.toFixed(1) + "m");
+      }
+      setSelectionMode("none");
+      setTimeout(() => setStatusMessage(null), 2000);
     },
-    [selectionMode, nodes],
+    [selectionMode, nodes, appendDebug],
   );
 
   const handlePlay = useCallback(() => {
     if (!sourceId || !destinationId) {
-      setError("Please select both source and destination on the map.");
+      const msg = "Please select both source and destination on the map.";
+      setError(msg);
+      console.warn("[Play]", msg);
       return;
     }
+    console.log("[Play] Starting animation:", sourceId, "->", destinationId);
     playbackRef.current.play();
   }, [sourceId, destinationId]);
 
@@ -390,6 +436,29 @@ export default function AppLayout() {
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
               <span className="text-sm font-medium">Loading road network...</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {debugLogs.length > 0 && (
+        <div className="pointer-events-none absolute bottom-4 right-4">
+          <div
+            ref={debugRef}
+            className="pointer-events-auto max-h-48 w-80 overflow-y-auto rounded-lg border border-black/10 bg-black/90 p-3 font-mono text-xs text-green-400 shadow-2xl backdrop-blur-sm dark:border-white/10"
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-white/80">Debug Console</span>
+              <button
+                type="button"
+                onClick={() => setDebugLogs([])}
+                className="text-white/60 hover:text-white"
+              >
+                Clear
+              </button>
+            </div>
+            {debugLogs.map((log, idx) => (
+              <div key={idx}>{log}</div>
+            ))}
           </div>
         </div>
       )}

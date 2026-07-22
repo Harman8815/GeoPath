@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Graph } from "@/lib/graph";
 import { dijkstraAnimation, type AnimationStep } from "@/lib/graph/dijkstraAnimation";
 
-export type PlaybackStatus = "idle" | "playing" | "paused" | "finished";
+export type PlaybackStatus = "idle" | "building" | "playing" | "paused" | "finished";
 
 export interface AnimationState {
   status: PlaybackStatus;
@@ -31,6 +31,8 @@ export interface UseAnimationPlaybackReturn extends AnimationState {
   setSpeed: (speed: number) => void;
 }
 
+const CHUNK_SIZE = 2000;
+
 export function useAnimationPlayback({
   graph,
   source,
@@ -42,12 +44,12 @@ export function useAnimationPlayback({
   const [steps, setSteps] = useState<AnimationStep[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const generatorRef = useRef<Generator<AnimationStep, void, unknown> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
   const statusRef = useRef(status);
   const stepsRef = useRef(steps);
   const speedRef = useRef(speed);
+  const buildingRef = useRef(false);
 
   useEffect(() => {
     statusRef.current = status;
@@ -58,38 +60,59 @@ export function useAnimationPlayback({
   const step = currentIndex >= 0 && currentIndex < steps.length ? steps[currentIndex] : null;
 
   const clearTimer = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
   }, []);
 
-  const buildGenerator = useCallback(() => {
+  const buildGeneratorAsync = useCallback(() => {
+    if (buildingRef.current) return;
+    buildingRef.current = true;
+    setStatus("building");
+    setSteps([]);
+    setCurrentIndex(-1);
+
     generatorRef.current = dijkstraAnimation(graph, source, target);
     const all: AnimationStep[] = [];
     let result = generatorRef.current.next();
-    while (!result.done) {
-      all.push(result.value);
-      result = generatorRef.current.next();
-    }
-    setSteps(all);
-    setCurrentIndex(0);
-    setStatus("paused");
-    void all;
-    return all;
+    let index = 0;
+
+    const processChunk = () => {
+      const start = performance.now();
+      while (index < CHUNK_SIZE && !result.done) {
+        all.push(result.value);
+        result = generatorRef.current!.next();
+        index++;
+      }
+
+      if (!result.done) {
+        setSteps([...all]);
+        const elapsed = performance.now() - start;
+        const delay = Math.max(0, 16 - elapsed);
+        setTimeout(processChunk, delay);
+      } else {
+        setSteps(all);
+        setCurrentIndex(0);
+        setStatus("paused");
+        buildingRef.current = false;
+      }
+    };
+
+    processChunk();
   }, [graph, source, target]);
 
   const play = useCallback(() => {
-    if (steps.length === 0) {
-      buildGenerator();
+    if (steps.length === 0 && !generatorRef.current) {
+      buildGeneratorAsync();
+      return;
+    }
+    if (steps.length === 0 && generatorRef.current) {
+      buildGeneratorAsync();
       return;
     }
     setStatus("playing");
-  }, [steps.length, buildGenerator]);
+  }, [steps.length, buildGeneratorAsync]);
 
   const pause = useCallback(() => {
     clearTimer();
@@ -103,6 +126,7 @@ export function useAnimationPlayback({
   const reset = useCallback(() => {
     clearTimer();
     generatorRef.current = null;
+    buildingRef.current = false;
     setSteps([]);
     setCurrentIndex(-1);
     setStatus("idle");
@@ -111,17 +135,17 @@ export function useAnimationPlayback({
   const stepForward = useCallback(() => {
     setCurrentIndex((idx) => {
       if (idx < 0) {
-        buildGenerator();
+        buildGeneratorAsync();
         return 0;
       }
-      if (idx + 1 >= steps.length) {
+      if (idx + 1 >= stepsRef.current.length) {
         setStatus("finished");
         return idx;
       }
       setStatus("paused");
       return idx + 1;
     });
-  }, [steps.length, buildGenerator]);
+  }, [buildGeneratorAsync]);
 
   const stepBackward = useCallback(() => {
     setCurrentIndex((idx) => {
@@ -184,6 +208,8 @@ export function useAnimationPlayback({
   useEffect(() => {
     return () => clearTimer();
   }, [clearTimer]);
+
+  console.log("[Playback] status:", status, "steps:", steps.length, "index:", currentIndex, "speed:", speed);
 
   return {
     status,

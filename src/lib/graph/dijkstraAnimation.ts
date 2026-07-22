@@ -46,7 +46,7 @@ export function* dijkstraAnimation(
   const previous = new Map<string, string | null>();
   const visited = new Set<string>();
   const queue = new PriorityQueue<string>();
-  const queueItems: Array<{ item: string; priority: number }> = [];
+  const visitedOrder: string[] = [];
   const exploredEdges: Array<{ source: string; target: string }> = [];
 
   for (const node of graph.getNodes()) {
@@ -56,49 +56,37 @@ export function* dijkstraAnimation(
 
   distances.set(source, 0);
   queue.enqueue(source, 0);
-  queueItems.push({ item: source, priority: 0 });
 
   yield {
     type: "init",
     nodeId: source,
     distances: new Map(distances),
     previous: new Map(previous),
-    queue: queueItems.map((q) => q.item),
-    queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
-    visited: Array.from(visited),
+    queue: [source],
+    queueItems: [{ item: source, priority: 0 }],
+    visited: [],
     description: `Initialize distances. Source ${source} = 0`,
-    exploredEdges: [...exploredEdges],
+    exploredEdges: [],
   };
 
   while (!queue.isEmpty()) {
     const current = queue.dequeue()!;
-    queueItems.shift();
 
     if (visited.has(current)) {
-      yield {
-        type: "queue",
-        nodeId: current,
-        distances: new Map(distances),
-        previous: new Map(previous),
-        queue: queueItems.map((q) => q.item),
-        queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
-        visited: Array.from(visited),
-        description: `Skip already visited ${current}`,
-        exploredEdges: [...exploredEdges],
-      };
       continue;
     }
 
     visited.add(current);
+    visitedOrder.push(current);
 
     yield {
       type: "visit",
       nodeId: current,
       distances: new Map(distances),
       previous: new Map(previous),
-      queue: queueItems.map((q) => q.item),
-      queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
-      visited: Array.from(visited),
+      queue: Array.from(queue.size ? [] : []),
+      queueItems: [],
+      visited: [...visitedOrder],
       description: `Visit node ${current} with distance ${distances.get(current)}`,
       exploredEdges: [...exploredEdges],
     };
@@ -112,19 +100,6 @@ export function* dijkstraAnimation(
     for (const edge of graph.getNeighbors(current)) {
       const neighbor = edge.target;
 
-      yield {
-        type: "neighbor",
-        nodeId: current,
-        edge: { source: edge.source, target: edge.target, weight: edge.weight },
-        distances: new Map(distances),
-        previous: new Map(previous),
-        queue: queueItems.map((q) => q.item),
-        queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
-        visited: Array.from(visited),
-        description: `Explore neighbor ${neighbor} from ${current}`,
-        exploredEdges: [...exploredEdges],
-      };
-
       if (visited.has(neighbor)) {
         continue;
       }
@@ -136,9 +111,6 @@ export function* dijkstraAnimation(
         previous.set(neighbor, current);
 
         queue.enqueue(neighbor, newDistance);
-        queueItems.push({ item: neighbor, priority: newDistance });
-        queueItems.sort((a, b) => a.priority - b.priority);
-
         exploredEdges.push({ source: edge.source, target: edge.target });
 
         yield {
@@ -147,26 +119,14 @@ export function* dijkstraAnimation(
           edge: { source: edge.source, target: edge.target, weight: edge.weight },
           distances: new Map(distances),
           previous: new Map(previous),
-          queue: queueItems.map((q) => q.item),
-          queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
-          visited: Array.from(visited),
+          queue: [],
+          queueItems: [],
+          visited: [...visitedOrder],
           description: `Relax edge ${edge.source}->${edge.target}: new distance to ${neighbor} = ${newDistance}`,
           exploredEdges: [...exploredEdges],
         };
       }
     }
-
-    yield {
-      type: "queue",
-      nodeId: current,
-      distances: new Map(distances),
-      previous: new Map(previous),
-      queue: queueItems.map((q) => q.item),
-      queueItems: queueItems.map((q) => ({ item: q.item, priority: q.priority })),
-      visited: Array.from(visited),
-      description: `Queue now: [${queueItems.map((q) => `${q.item}:${q.priority}`).join(", ")}]`,
-      exploredEdges: [...exploredEdges],
-    };
   }
 
   yield {
@@ -176,7 +136,7 @@ export function* dijkstraAnimation(
     previous: new Map(previous),
     queue: [],
     queueItems: [],
-    visited: Array.from(visited),
+    visited: visitedOrder,
     description: `Dijkstra completed`,
     path: target ? reconstructPath(previous, target) : [],
     exploredEdges: [...exploredEdges],

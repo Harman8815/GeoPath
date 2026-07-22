@@ -72,24 +72,147 @@ export async function searchCities(query: string): Promise<CityResult[]> {
   }));
 }
 
+const MAX_SINGLE_BBOX_AREA = 0.05;
+
+function splitBbox(bbox: [number, number, number, number]): [number, number, number, number][] {
+  const [south, north, west, east] = bbox;
+  const latSpan = north - south;
+  const lonSpan = east - west;
+  const area = latSpan * lonSpan;
+
+  if (area <= MAX_SINGLE_BBOX_AREA) {
+    return [bbox];
+  }
+
+  const tiles: [number, number, number, number][] = [];
+  const latSteps = Math.ceil(Math.sqrt(area / MAX_SINGLE_BBOX_AREA));
+  const lonSteps = Math.ceil(area / MAX_SINGLE_BBOX_AREA / latSteps);
+
+  const latStepSize = latSpan / latSteps;
+  const lonStepSize = lonSpan / lonSteps;
+
+  for (let i = 0; i < latSteps; i++) {
+    for (let j = 0; j < lonSteps; j++) {
+      const tileSouth = south + i * latStepSize;
+      const tileNorth = south + (i + 1) * latStepSize;
+      const tileWest = west + j * lonStepSize;
+      const tileEast = west + (j + 1) * lonStepSize;
+      tiles.push([tileSouth, tileNorth, tileWest, tileEast]);
+    }
+  }
+
+  console.log(`[Overpass] Split bbox into ${tiles.length} tiles (area: ${area.toFixed(4)} deg²)`);
+  return tiles;
+}
+
 export async function fetchRoadNetwork(
   bbox: [number, number, number, number],
 ): Promise<OverpassResponse> {
-  const [south, north, west, east] = bbox;
-  const query = `[out:json][timeout:25];
-(
-  way["highway"](${south},${west},${north},${east});
-);
-out body;
->;
-out skel qt;`;
-  const res = await fetch(OVERPASS_URL, {
-    method: "POST",
-    body: `data=${encodeURIComponent(query)}`,
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  });
-  if (!res.ok) throw new Error(`Road network download failed (${res.status}).`);
-  return (await res.json()) as OverpassResponse;
+  const tiles = splitBbox(bbox);
+  const maxRetries = 3;
+  const tileResults: OverpassResponse[] = [];
+
+  for (let t = 0; t < tiles.length; t++) {
+    const tile = tiles[t];
+    const [south, north, west, east] = tile;
+    const query = `[out:json][timeout:60];
+    (
+      way["highway"]["highway"!~"footway|path|steps|cycleway|sidewalk|track|service"](${south},${west},${north},${east});
+    );
+    out body;
+    >;
+    out skel qt;`;
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (tiles.length > 1) {
+          console.log(`[Overpass] Fetching tile ${t + 1}/${tiles.length} (attempt ${attempt})`);
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 55000);
+
+        const res = await fetch(OVERPASS_URL, {
+          method: "POST",
+          body: `data=${encodeURIComponent(query)}`,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = (await res.json()) as OverpassResponse;
+        tileResults.push(data);
+        break;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        
+        if (attempt < maxRetries) {
+          const delay = 1500 * Math.pow(2, attempt);
+          console.warn(`[Overpass] Tile ${t + 1} attempt ${attempt} failed: ${lastError.message}. Retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else if (tiles.length > 1 && t < tiles.length - 1) {
+          console.error(`[Overpass] Tile ${t + 1} failed permanently, continuing with remaining tiles. Error: ${lastError.message}`);
+          break;
+        }
+      }
+    }
+
+    if (t < tiles.length - 1 && tileResults.length <= t) {
+      continue;
+    }
+  }
+
+  if (tileResults.length === 0) {
+    throw new Error(
+      `Road network download failed. ` +
+      `The Overpass server may be overloaded. ` +
+      `Please try again in a few minutes or try a smaller area.`
+    );
+  }
+
+  const merged = mergeResponses(tileResults);
+  console.log(`[Overpass] Merged ${tileResults.length} tiles: ${merged.elements.length} total elements`);
+  return merged;
+}
+
+function mergeResponses(responses: OverpassResponse[]): OverpassResponse {
+  const nodeMap = new Map<number, OverpassNode>();
+  const wayMap = new Map<number, OverpassWay>();
+  const nodeIds = new Set<number>();
+  const wayIds = new Set<number>();
+
+  for (const response of responses) {
+    for (const el of response.elements) {
+      if (el.type === "node") {
+        if (!nodeIds.has(el.id)) {
+          nodeIds.add(el.id);
+          nodeMap.set(el.id, el as OverpassNode);
+        }
+      } else if (el.type === "way") {
+        if (!wayIds.has(el.id)) {
+          wayIds.add(el.id);
+          wayMap.set(el.id, el as OverpassWay);
+        }
+      }
+    }
+  }
+
+  const elements: Array<OverpassNode | OverpassWay> = [];
+  for (const node of nodeMap.values()) {
+    elements.push(node);
+  }
+  for (const way of wayMap.values()) {
+    elements.push(way);
+  }
+
+  return { elements };
 }
 
 export function convertToGraph(data: OverpassResponse): GraphData {

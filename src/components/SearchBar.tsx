@@ -50,13 +50,13 @@ export default function SearchBar({ onCitySelect, disabled }: SearchBarProps) {
             if (e.key === "Enter") void handleSearch();
           }}
           disabled={disabled || loading}
-          className="flex-1 rounded-lg border border-black/10 bg-white/90 px-4 py-2.5 text-sm shadow-lg backdrop-blur-sm transition-all placeholder:text-black/40 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 dark:border-white/10 dark:bg-black/80 dark:text-white dark:placeholder:text-white/40 dark:focus:border-blue-400"
+          className="flex-1 rounded-lg border border-black/15 bg-white/[0.97] px-4 py-2.5 text-sm shadow-xl backdrop-blur-md transition-all placeholder:text-black/40 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 dark:border-white/15 dark:bg-gray-900/[0.97] dark:text-gray-50 dark:placeholder:text-white/40 dark:focus:border-blue-400"
         />
         <button
           type="button"
           onClick={() => void handleSearch()}
           disabled={disabled || loading || !query.trim()}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-xl transition-all hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           {loading ? "Searching..." : "Search"}
         </button>
@@ -68,18 +68,18 @@ export default function SearchBar({ onCitySelect, disabled }: SearchBarProps) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-lg border border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-black/90"
+            className="absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-lg border border-black/10 bg-white/[0.98] shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-gray-900/[0.98]"
           >
             {results.map((city) => (
               <li key={city.id}>
                 <button
                   type="button"
                   onClick={() => handleSelect(city)}
-                  className="w-full truncate px-4 py-3 text-left text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                  className="w-full truncate px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
                   title={city.displayName}
                 >
-                  <div className="font-medium">{city.displayName.split(",")[0]}</div>
-                  <div className="truncate text-xs text-black/50 dark:text-white/50">{city.displayName}</div>
+                  <div className="text-black dark:text-gray-50">{city.displayName.split(",")[0]}</div>
+                  <div className="truncate text-xs text-black/60 dark:text-white/60">{city.displayName}</div>
                 </button>
               </li>
             ))}
@@ -91,7 +91,7 @@ export default function SearchBar({ onCitySelect, disabled }: SearchBarProps) {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-2 text-xs text-red-500 dark:text-red-400"
+          className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400"
         >
           {error}
         </motion.p>

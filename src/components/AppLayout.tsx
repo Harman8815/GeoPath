@@ -224,35 +224,35 @@ export default function AppLayout() {
             )}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="pointer-events-auto flex items-center gap-2"
-          >
-            <h1 className="text-lg font-bold text-white drop-shadow-md">
-              GeoPath
-            </h1>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-              Dijkstra Simulator
-            </span>
-          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="pointer-events-auto flex items-center gap-2"
+              >
+                <h1 className="text-lg font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                  GeoPath
+                </h1>
+                <span className="rounded-full bg-white/25 px-2 py-0.5 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+                  Dijkstra Simulator
+                </span>
+              </motion.div>
 
-          {!graphData && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="pointer-events-none max-w-md"
-            >
-              <div className="rounded-lg bg-white/90 px-4 py-3 text-sm shadow-lg backdrop-blur-sm dark:bg-black/80 dark:text-white">
-                <p className="font-medium">Getting Started</p>
-                <ol className="mt-1 list-inside list-decimal text-black/70 dark:text-white/70">
-                  <li>Search for any city above</li>
-                  <li>Click the map to set Source and Destination</li>
-                  <li>Hit Start to watch Dijkstra explore the roads</li>
-                </ol>
-              </div>
-            </motion.div>
-          )}
+              {!graphData && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="pointer-events-none max-w-md"
+                >
+                  <div className="rounded-lg border border-black/10 bg-white/[0.97] px-4 py-3 text-sm shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-gray-900/[0.97] dark:text-gray-50">
+                    <p className="font-bold text-black dark:text-white">Getting Started</p>
+                    <ol className="mt-1 list-inside list-decimal text-black/80 dark:text-gray-200">
+                      <li>Search for any city above</li>
+                      <li>Click the map to set Source and Destination</li>
+                      <li>Hit Start to watch Dijkstra explore the roads</li>
+                    </ol>
+                  </div>
+                </motion.div>
+              )}
         </div>
 
         <div className="flex items-end justify-between gap-4">
@@ -261,7 +261,7 @@ export default function AppLayout() {
               <button
                 type="button"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="rounded-lg bg-white/90 px-3 py-2 text-sm font-medium shadow-lg backdrop-blur-sm transition-colors hover:bg-white dark:bg-black/80 dark:text-white dark:hover:bg-black/90"
+                className="rounded-lg border border-black/10 bg-white/[0.97] px-3 py-2 text-sm font-bold text-black shadow-xl backdrop-blur-md transition hover:bg-white dark:border-white/10 dark:bg-gray-900/[0.97] dark:text-gray-50 dark:hover:bg-gray-900"
               >
                 {sidebarOpen ? "Hide Controls" : "Show Controls"}
               </button>
@@ -276,23 +276,23 @@ export default function AppLayout() {
                 exit={{ opacity: 0, y: 20 }}
                 className="pointer-events-auto flex gap-3"
               >
-                <div className="w-80 rounded-xl bg-white/95 p-5 shadow-2xl backdrop-blur-sm dark:bg-black/90 dark:text-white">
-                  <h3 className="mb-4 text-sm font-semibold">Controls</h3>
+                <div className="w-80 rounded-xl border border-black/10 bg-white/[0.97] p-5 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-gray-900/[0.97] dark:text-gray-50">
+                  <h3 className="mb-4 text-sm font-semibold text-black dark:text-white">Controls</h3>
                   <div className="flex flex-col gap-4">
                     <div>
-                      <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-black/60 dark:text-white/60">
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
                         Map Style
                       </label>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         {(Object.keys(MAP_STYLES) as MapStyleId[]).map((id) => (
                           <button
                             key={id}
                             type="button"
                             onClick={() => handleStyleChange(id)}
-                            className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium transition-all ${
+                            className={`rounded-md border px-2 py-1.5 text-xs font-semibold transition-all ${
                               mapStyle === id
-                                ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-900/30 dark:text-blue-300"
-                                : "border-black/10 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+                                ? "border-blue-500 bg-blue-600 text-white shadow-md dark:bg-blue-500"
+                                : "border-black/15 bg-black/[0.03] text-black hover:bg-black/[0.07] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                             }`}
                           >
                             {MAP_STYLES[id].name}
@@ -302,17 +302,17 @@ export default function AppLayout() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-black/60 dark:text-white/60">
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
                         Selection Mode
                       </label>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSelectionMode("source")}
-                          className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium transition-all ${
+                          className={`rounded-md border px-2 py-1.5 text-xs font-semibold transition-all ${
                             selectionMode === "source"
-                              ? "border-green-500 bg-green-50 text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-300"
-                              : "border-black/10 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+                              ? "border-green-600 bg-green-600 text-white shadow-md dark:bg-green-500"
+                              : "border-black/15 bg-black/[0.03] text-black hover:bg-black/[0.07] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                           }`}
                         >
                           Source
@@ -320,10 +320,10 @@ export default function AppLayout() {
                         <button
                           type="button"
                           onClick={() => setSelectionMode("destination")}
-                          className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium transition-all ${
+                          className={`rounded-md border px-2 py-1.5 text-xs font-semibold transition-all ${
                             selectionMode === "destination"
-                              ? "border-red-500 bg-red-50 text-red-700 shadow-sm dark:bg-red-900/30 dark:text-red-300"
-                              : "border-black/10 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+                              ? "border-red-600 bg-red-600 text-white shadow-md dark:bg-red-500"
+                              : "border-black/15 bg-black/[0.03] text-black hover:bg-black/[0.07] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                           }`}
                         >
                           Destination
@@ -331,10 +331,10 @@ export default function AppLayout() {
                         <button
                           type="button"
                           onClick={() => setSelectionMode("none")}
-                          className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium transition-all ${
+                          className={`rounded-md border px-2 py-1.5 text-xs font-semibold transition-all ${
                             selectionMode === "none"
-                              ? "border-black/20 bg-black/5 dark:border-white/20 dark:bg-white/10"
-                              : "border-black/10 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+                              ? "border-gray-800 bg-gray-800 text-white shadow-md dark:border-white/20 dark:bg-white/20"
+                              : "border-black/15 bg-black/[0.03] text-black hover:bg-black/[0.07] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                           }`}
                         >
                           None
@@ -343,9 +343,9 @@ export default function AppLayout() {
                     </div>
 
                     <div>
-                      <label className="mb-2 flex justify-between text-xs font-medium uppercase tracking-wider text-black/60 dark:text-white/60">
+                      <label className="mb-2 flex justify-between text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
                         <span>Animation Speed</span>
-                        <span className="font-mono">{speed}x</span>
+                        <span className="font-mono text-black dark:text-white">{speed}x</span>
                       </label>
                       <input
                         type="range"
@@ -354,7 +354,7 @@ export default function AppLayout() {
                         step={0.5}
                         value={speed}
                         onChange={(e) => setSpeed(Number(e.target.value))}
-                        className="w-full accent-blue-600"
+                        className="w-full accent-blue-600 h-2"
                       />
                     </div>
 
@@ -363,15 +363,21 @@ export default function AppLayout() {
                         type="button"
                         onClick={handlePlay}
                         disabled={playback.status === "playing"}
-                        className="rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
+                        className="rounded-md bg-blue-600 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50 shadow-md"
                       >
-                        {playback.status === "idle" ? "Start" : playback.status === "playing" ? "Running..." : "Start"}
+                        {playback.status === "building"
+                          ? "Building..."
+                          : playback.status === "idle"
+                            ? "Start"
+                            : playback.status === "playing"
+                              ? "Running..."
+                              : "Start"}
                       </button>
                       <button
                         type="button"
                         onClick={playback.pause}
                         disabled={playback.status !== "playing"}
-                        className="rounded-md border border-black/10 px-3 py-2.5 text-sm font-medium transition-all hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/10"
+                        className="rounded-md border border-black/15 bg-black/[0.03] px-3 py-2.5 text-sm font-bold text-black transition-all hover:bg-black/[0.07] disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                       >
                         Pause
                       </button>
@@ -379,32 +385,32 @@ export default function AppLayout() {
                         type="button"
                         onClick={playback.resume}
                         disabled={playback.status !== "paused"}
-                        className="rounded-md border border-black/10 px-3 py-2.5 text-sm font-medium transition-all hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/10"
+                        className="rounded-md border border-black/15 bg-black/[0.03] px-3 py-2.5 text-sm font-bold text-black transition-all hover:bg-black/[0.07] disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                       >
                         Resume
                       </button>
                       <button
                         type="button"
                         onClick={handleReset}
-                        className="rounded-md border border-black/10 px-3 py-2.5 text-sm font-medium transition-all hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+                        className="rounded-md border border-black/15 bg-black/[0.03] px-3 py-2.5 text-sm font-bold text-black transition-all hover:bg-black/[0.07] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                       >
                         Reset
                       </button>
                     </div>
 
                     {playback.step && (
-                      <div className="rounded-lg bg-black/5 p-4 dark:bg-white/5">
-                        <p className="text-xs text-black/70 dark:text-white/70">
+                      <div className="rounded-lg border border-black/10 bg-black/[0.03] p-4 dark:border-white/10 dark:bg-white/5">
+                        <p className="text-xs text-black/80 dark:text-gray-200">
                           {playback.step.description}
                         </p>
-                        <div className="mt-3 flex gap-4 text-xs">
+                        <div className="mt-3 flex gap-4 text-xs font-semibold">
                           <div>
                             <span className="text-black/50 dark:text-white/50">Visited:</span>{" "}
-                            <span className="font-mono font-medium">{playback.step.visited.length}</span>
+                            <span className="font-mono text-black dark:text-white">{playback.step.visited.length}</span>
                           </div>
                           <div>
                             <span className="text-black/50 dark:text-white/50">Step:</span>{" "}
-                            <span className="font-mono font-medium">{playback.currentIndex + 1}/{playback.steps.length}</span>
+                            <span className="font-mono text-black dark:text-white">{playback.currentIndex + 1}/{playback.steps.length}</span>
                           </div>
                         </div>
                       </div>

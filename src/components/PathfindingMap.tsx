@@ -31,7 +31,13 @@ export default function PathfindingMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const layersAddedRef = useRef(false);
+  const onMapClickRef = useRef(onMapClick);
   const currentStyleRef = useRef(mapStyle);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     currentStyleRef.current = mapStyle;
@@ -56,7 +62,7 @@ export default function PathfindingMap({
     });
 
     map.on("click", (e) => {
-      onMapClick({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      onMapClickRef.current({ lng: e.lngLat.lng, lat: e.lngLat.lat });
     });
 
     mapRef.current = map;
@@ -64,18 +70,9 @@ export default function PathfindingMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      layersAddedRef.current = false;
     };
-  }, [onMapClick]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapLoaded) return;
-
-    if (currentStyleRef.current !== mapStyle) {
-      currentStyleRef.current = mapStyle;
-      map.setStyle(mapStyle);
-    }
-  }, [mapLoaded, mapStyle]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -83,10 +80,9 @@ export default function PathfindingMap({
 
     const addLayers = () => {
       if (!map.isStyleLoaded()) return;
-      if (map.getSource("roads")) return;
 
       try {
-        if (geoJSON) {
+        if (!map.getSource("roads") && geoJSON) {
           map.addSource("roads", {
             type: "geojson",
             data: geoJSON,
@@ -103,104 +99,112 @@ export default function PathfindingMap({
           });
         }
 
-        map.addSource("explored", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
-        });
-        map.addLayer({
-          id: "explored",
-          type: "line",
-          source: "explored",
-          paint: {
-            "line-color": "#a855f7",
-            "line-width": 3,
-            "line-opacity": 0.7,
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-        });
+        if (!map.getSource("explored")) {
+          map.addSource("explored", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "explored",
+            type: "line",
+            source: "explored",
+            paint: {
+              "line-color": "#a855f7",
+              "line-width": 3,
+              "line-opacity": 0.7,
+            },
+            layout: {
+              "line-cap": "round",
+              "line-join": "round",
+            },
+          });
 
-        map.on("sourcedata", (e) => {
-          if (e.isSourceLoaded && e.sourceId === "explored") {
-            try {
-              map.setPaintProperty("explored", "line-opacity-transition", {
-                duration: 300,
-              });
-            } catch {
-              // ignore if property not set yet
+          map.on("sourcedata", (e) => {
+            if (e.isSourceLoaded && e.sourceId === "explored") {
+              try {
+                map.setPaintProperty("explored", "line-opacity-transition", {
+                  duration: 300,
+                });
+              } catch {
+                // ignore if property not set yet
+              }
             }
-          }
-        });
+          });
+        }
 
-        map.addSource("path", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
-        });
-        map.addLayer({
-          id: "path-glow",
-          type: "line",
-          source: "path",
-          paint: {
-            "line-color": "#3b82f6",
-            "line-width": 8,
-            "line-opacity": 0.3,
-            "line-blur": 4,
-          },
-        });
-        map.addLayer({
-          id: "path",
-          type: "line",
-          source: "path",
-          paint: {
-            "line-color": "#3b82f6",
-            "line-width": 4,
-            "line-opacity": 0.9,
-            "line-blur": 1,
-          },
-        });
+        if (!map.getSource("path")) {
+          map.addSource("path", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "path-glow",
+            type: "line",
+            source: "path",
+            paint: {
+              "line-color": "#3b82f6",
+              "line-width": 8,
+              "line-opacity": 0.3,
+              "line-blur": 4,
+            },
+          });
+          map.addLayer({
+            id: "path",
+            type: "line",
+            source: "path",
+            paint: {
+              "line-color": "#3b82f6",
+              "line-width": 4,
+              "line-opacity": 0.9,
+              "line-blur": 1,
+            },
+          });
+        }
 
-        map.addSource("markers", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
-        });
-        map.addLayer({
-          id: "markers-pulse",
-          type: "circle",
-          source: "markers",
-          paint: {
-            "circle-radius": 16,
-            "circle-color": [
-              "case",
-              ["==", ["get", "type"], "source"],
-              "#22c55e",
-              ["==", ["get", "type"], "destination"],
-              "#ef4444",
-              "#f97316",
-            ],
-            "circle-opacity": 0.2,
-            "circle-blur": 2,
-          },
-        });
-        map.addLayer({
-          id: "markers",
-          type: "circle",
-          source: "markers",
-          paint: {
-            "circle-radius": 8,
-            "circle-color": [
-              "case",
-              ["==", ["get", "type"], "source"],
-              "#22c55e",
-              ["==", ["get", "type"], "destination"],
-              "#ef4444",
-              "#f97316",
-            ],
-            "circle-stroke-width": 3,
-            "circle-stroke-color": "#ffffff",
-          },
-        });
+        if (!map.getSource("markers")) {
+          map.addSource("markers", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "markers-pulse",
+            type: "circle",
+            source: "markers",
+            paint: {
+              "circle-radius": 16,
+              "circle-color": [
+                "case",
+                ["==", ["get", "type"], "source"],
+                "#22c55e",
+                ["==", ["get", "type"], "destination"],
+                "#ef4444",
+                "#f97316",
+              ],
+              "circle-opacity": 0.2,
+              "circle-blur": 2,
+            },
+          });
+          map.addLayer({
+            id: "markers",
+            type: "circle",
+            source: "markers",
+            paint: {
+              "circle-radius": 8,
+              "circle-color": [
+                "case",
+                ["==", ["get", "type"], "source"],
+                "#22c55e",
+                ["==", ["get", "type"], "destination"],
+                "#ef4444",
+                "#f97316",
+              ],
+              "circle-stroke-width": 3,
+              "circle-stroke-color": "#ffffff",
+            },
+          });
+        }
+
+        layersAddedRef.current = true;
       } catch (err) {
         if (err instanceof Error && err.message.includes("Style is not done loading")) {
           map.once("style.load", () => addLayers());
@@ -220,6 +224,16 @@ export default function PathfindingMap({
       map.off("style.load", onStyleLoad);
     };
   }, [mapLoaded, geoJSON]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    if (currentStyleRef.current !== mapStyle) {
+      currentStyleRef.current = mapStyle;
+      map.setStyle(mapStyle);
+    }
+  }, [mapLoaded, mapStyle]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -318,10 +332,10 @@ export default function PathfindingMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapLoaded) return;
+    if (!map || !mapLoaded || !geoJSON) return;
 
     const coordinates: [number, number][] = [];
-    for (const feature of geoJSON?.features ?? []) {
+    for (const feature of geoJSON.features) {
       if (feature.geometry.type === "LineString") {
         for (const coord of feature.geometry.coordinates) {
           coordinates.push(coord as [number, number]);

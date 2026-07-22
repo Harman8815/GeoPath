@@ -38,6 +38,10 @@ export function* dijkstraAnimation(
   source: string,
   target?: string,
 ): Generator<AnimationStep, void, unknown> {
+  if (!source) {
+    return;
+  }
+
   const distances = new Map<string, number>();
   const previous = new Map<string, string | null>();
   const visited = new Set<string>();

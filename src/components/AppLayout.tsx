@@ -45,10 +45,14 @@ export default function AppLayout() {
   });
 
   const playbackRef = useRef(playback);
-
   useEffect(() => {
     playbackRef.current = playback;
-  });
+  }, [playback]);
+
+  const sourceIdRef = useRef(sourceId);
+  useEffect(() => {
+    sourceIdRef.current = sourceId;
+  }, [sourceId]);
 
   const sourceNode = useMemo(
     () => nodes.find((n) => n.id === sourceId) ?? null,
@@ -117,13 +121,13 @@ export default function AppLayout() {
           setDestinationId(null);
           playbackRef.current.reset();
         } else if (selectionMode === "destination") {
-          if (closest.node.id === sourceId) return;
+          if (closest.node.id === sourceIdRef.current) return;
           setDestinationId(closest.node.id);
         }
         setSelectionMode("none");
       }
     },
-    [selectionMode, nodes, sourceId],
+    [selectionMode, nodes],
   );
 
   const handlePlay = useCallback(() => {

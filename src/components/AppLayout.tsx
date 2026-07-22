@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PathfindingMap from "@/components/PathfindingMap";
 import SearchBar from "@/components/SearchBar";
@@ -44,6 +44,12 @@ export default function AppLayout() {
     speed,
   });
 
+  const playbackRef = useRef(playback);
+
+  useEffect(() => {
+    playbackRef.current = playback;
+  });
+
   const sourceNode = useMemo(
     () => nodes.find((n) => n.id === sourceId) ?? null,
     [nodes, sourceId],
@@ -79,7 +85,7 @@ export default function AppLayout() {
       setGeoJSON(geo);
       setSourceId(null);
       setDestinationId(null);
-      playback.reset();
+      playbackRef.current.reset();
       setStatusMessage(
         `Loaded ${graph.nodes.length} intersections, ${graph.edges.length} road segments`,
       );
@@ -89,7 +95,7 @@ export default function AppLayout() {
     } finally {
       setLoading(false);
     }
-  }, [playback]);
+  }, []);
 
   const handleMapClick = useCallback(
     (lngLat: { lng: number; lat: number }) => {
@@ -109,7 +115,7 @@ export default function AppLayout() {
         if (selectionMode === "source") {
           setSourceId(closest.node.id);
           setDestinationId(null);
-          playback.reset();
+          playbackRef.current.reset();
         } else if (selectionMode === "destination") {
           if (closest.node.id === sourceId) return;
           setDestinationId(closest.node.id);
@@ -117,7 +123,7 @@ export default function AppLayout() {
         setSelectionMode("none");
       }
     },
-    [selectionMode, nodes, sourceId, playback],
+    [selectionMode, nodes, sourceId],
   );
 
   const handlePlay = useCallback(() => {
@@ -125,15 +131,15 @@ export default function AppLayout() {
       setError("Please select both source and destination on the map.");
       return;
     }
-    playback.play();
-  }, [sourceId, destinationId, playback]);
+    playbackRef.current.play();
+  }, [sourceId, destinationId]);
 
   const handleReset = useCallback(() => {
-    playback.reset();
+    playbackRef.current.reset();
     setSourceId(null);
     setDestinationId(null);
     setSelectionMode("none");
-  }, [playback]);
+  }, []);
 
   const handleStyleChange = useCallback((style: MapStyleId) => {
     setMapStyle(style);

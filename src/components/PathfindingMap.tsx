@@ -14,6 +14,8 @@ export interface PathfindingMapProps {
   destinationNode: NodeModel | null;
   onMapClick: (lngLat: { lng: number; lat: number }) => void;
   mapStyle?: string;
+  currentNode?: string | null;
+  currentEdge?: { source: string; target: string } | null;
   className?: string;
 }
 
@@ -26,18 +28,30 @@ export default function PathfindingMap({
   destinationNode,
   onMapClick,
   mapStyle = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  currentNode,
+  currentEdge,
   className = "",
 }: PathfindingMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const currentStyleRef = useRef(mapStyle);
   const layersAddedRef = useRef(false);
   const onMapClickRef = useRef(onMapClick);
-  const currentStyleRef = useRef(mapStyle);
+  const currentNodeRef = useRef(currentNode);
+  const currentEdgeRef = useRef(currentEdge);
 
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+
+  useEffect(() => {
+    currentNodeRef.current = currentNode;
+  }, [currentNode]);
+
+  useEffect(() => {
+    currentEdgeRef.current = currentEdge;
+  }, [currentEdge]);
 
   useEffect(() => {
     currentStyleRef.current = mapStyle;
@@ -204,6 +218,47 @@ export default function PathfindingMap({
           });
         }
 
+        if (!map.getSource("current-edge")) {
+          map.addSource("current-edge", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "current-edge",
+            type: "line",
+            source: "current-edge",
+            paint: {
+              "line-color": "#3b82f6",
+              "line-width": 5,
+              "line-opacity": 0.9,
+              "line-blur": 1,
+            },
+            layout: {
+              "line-cap": "round",
+              "line-join": "round",
+            },
+          });
+        }
+
+        if (!map.getSource("current-node")) {
+          map.addSource("current-node", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "current-node",
+            type: "circle",
+            source: "current-node",
+            paint: {
+              "circle-radius": 10,
+              "circle-color": "#3b82f6",
+              "circle-stroke-width": 3,
+              "circle-stroke-color": "#ffffff",
+              "circle-opacity": 0.9,
+            },
+          });
+        }
+
         layersAddedRef.current = true;
       } catch (err) {
         if (err instanceof Error && err.message.includes("Style is not done loading")) {
@@ -329,6 +384,60 @@ export default function PathfindingMap({
       });
     }
   }, [mapLoaded, sourceNode, destinationNode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || !currentEdge) return;
+
+    const sourceNode = nodes.find((n) => n.id === currentEdge.source);
+    const targetNode = nodes.find((n) => n.id === currentEdge.target);
+    if (!sourceNode || !targetNode || sourceNode.lat == null || sourceNode.lon == null || targetNode.lat == null || targetNode.lon == null) return;
+
+    const source = map.getSource("current-edge");
+    if (source) {
+      (source as maplibregl.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [sourceNode.lon, sourceNode.lat],
+                [targetNode.lon, targetNode.lat],
+              ],
+            },
+          },
+        ],
+      });
+    }
+  }, [mapLoaded, currentEdge, nodes]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || !currentNode) return;
+
+    const node = nodes.find((n) => n.id === currentNode);
+    if (!node || node.lat == null || node.lon == null) return;
+
+    const source = map.getSource("current-node");
+    if (source) {
+      (source as maplibregl.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "Point",
+              coordinates: [node.lon, node.lat],
+            },
+          },
+        ],
+      });
+    }
+  }, [mapLoaded, currentNode, nodes]);
 
   useEffect(() => {
     const map = mapRef.current;

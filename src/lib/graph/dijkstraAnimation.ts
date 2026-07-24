@@ -1,26 +1,16 @@
 import { Graph } from "./Graph";
 import { PriorityQueue } from "./PriorityQueue";
 
-export type AnimationStepType =
-  | "init"
-  | "visit"
-  | "neighbor"
-  | "relax"
-  | "queue"
-  | "finish";
+export type AnimationStepType = "visit" | "relax" | "finish";
 
 export interface AnimationStep {
   type: AnimationStepType;
   nodeId: string;
-  edge?: { source: string; target: string; weight: number };
-  distances: Map<string, number>;
-  previous: Map<string, string | null>;
-  queue: string[];
-  queueItems: Array<{ item: string; priority: number }>;
-  visited: string[];
+  newEdge?: { source: string; target: string };
+  visitedCount: number;
+  exploredCount: number;
   description: string;
   path?: string[];
-  exploredEdges: Array<{ source: string; target: string }>;
 }
 
 function reconstructPath(previous: Map<string, string | null>, target: string): string[] {
@@ -42,11 +32,10 @@ export function* dijkstraAnimation(
     return;
   }
 
-  const distances = new Map<string, number>();
+  const visitedSet = new Set<string>();
   const previous = new Map<string, string | null>();
-  const visited = new Set<string>();
+  const distances = new Map<string, number>();
   const queue = new PriorityQueue<string>();
-  const visitedOrder: string[] = [];
   const exploredEdges: Array<{ source: string; target: string }> = [];
 
   for (const node of graph.getNodes()) {
@@ -58,37 +47,28 @@ export function* dijkstraAnimation(
   queue.enqueue(source, 0);
 
   yield {
-    type: "init",
+    type: "visit",
     nodeId: source,
-    distances: new Map(distances),
-    previous: new Map(previous),
-    queue: [source],
-    queueItems: [{ item: source, priority: 0 }],
-    visited: [],
-    description: `Initialize distances. Source ${source} = 0`,
-    exploredEdges: [],
+    visitedCount: 1,
+    exploredCount: 0,
+    description: `Initialize: source ${source} = 0`,
   };
 
   while (!queue.isEmpty()) {
     const current = queue.dequeue()!;
 
-    if (visited.has(current)) {
+    if (visitedSet.has(current)) {
       continue;
     }
 
-    visited.add(current);
-    visitedOrder.push(current);
+    visitedSet.add(current);
 
     yield {
       type: "visit",
       nodeId: current,
-      distances: new Map(distances),
-      previous: new Map(previous),
-      queue: Array.from(queue.size ? [] : []),
-      queueItems: [],
-      visited: [...visitedOrder],
+      visitedCount: visitedSet.size,
+      exploredCount: exploredEdges.length,
       description: `Visit node ${current} with distance ${distances.get(current)}`,
-      exploredEdges: [...exploredEdges],
     };
 
     if (target && current === target) {
@@ -100,7 +80,7 @@ export function* dijkstraAnimation(
     for (const edge of graph.getNeighbors(current)) {
       const neighbor = edge.target;
 
-      if (visited.has(neighbor)) {
+      if (visitedSet.has(neighbor)) {
         continue;
       }
 
@@ -116,14 +96,10 @@ export function* dijkstraAnimation(
         yield {
           type: "relax",
           nodeId: current,
-          edge: { source: edge.source, target: edge.target, weight: edge.weight },
-          distances: new Map(distances),
-          previous: new Map(previous),
-          queue: [],
-          queueItems: [],
-          visited: [...visitedOrder],
-          description: `Relax edge ${edge.source}->${edge.target}: new distance to ${neighbor} = ${newDistance}`,
-          exploredEdges: [...exploredEdges],
+          newEdge: { source: edge.source, target: edge.target },
+          visitedCount: visitedSet.size,
+          exploredCount: exploredEdges.length,
+          description: `Explore edge ${edge.source}->${edge.target}: new distance to ${neighbor} = ${newDistance}`,
         };
       }
     }
@@ -132,13 +108,9 @@ export function* dijkstraAnimation(
   yield {
     type: "finish",
     nodeId: target ?? source,
-    distances: new Map(distances),
-    previous: new Map(previous),
-    queue: [],
-    queueItems: [],
-    visited: visitedOrder,
+    visitedCount: visitedSet.size,
+    exploredCount: exploredEdges.length,
     description: `Dijkstra completed`,
     path: target ? reconstructPath(previous, target) : [],
-    exploredEdges: [...exploredEdges],
   };
 }

@@ -78,18 +78,21 @@ export default function AppLayout() {
   );
 
   const exploredEdges = useMemo(() => {
-    return playback.step?.exploredEdges ?? [];
-  }, [playback.step]);
+    const edgeList = graphData?.edges ?? [];
+    return playback.exploredCount > 0
+      ? edgeList.slice(0, Math.min(edgeList.length, playback.exploredCount))
+      : [];
+  }, [playback.exploredCount, graphData]);
 
   const pathEdges = useMemo(() => {
-    const path = playback.step?.path ?? [];
+    const path = playback.path;
     if (path.length < 2) return [];
     const result: Array<{ source: string; target: string }> = [];
     for (let i = 0; i < path.length - 1; i++) {
       result.push({ source: path[i], target: path[i + 1] });
     }
     return result;
-  }, [playback.step]);
+  }, [playback.path]);
 
   const handleCitySearch = useCallback(async (city: CityResult) => {
     setLoading(true);
@@ -206,6 +209,8 @@ export default function AppLayout() {
         destinationNode={destinationNode}
         onMapClick={handleMapClick}
         mapStyle={MAP_STYLES[mapStyle].url}
+        currentNode={playback.currentNode}
+        currentEdge={playback.currentEdge}
         className="absolute inset-0"
       />
 
@@ -398,21 +403,39 @@ export default function AppLayout() {
                       </button>
                     </div>
 
-                    {playback.step && (
+                    {playback.status !== "idle" && (
                       <div className="rounded-lg border border-black/10 bg-black/[0.03] p-4 dark:border-white/10 dark:bg-white/5">
                         <p className="text-xs text-black/80 dark:text-gray-200">
-                          {playback.step.description}
+                          {playback.description || "Ready"}
                         </p>
+                        {playback.status === "playing" && (
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                            <div
+                              className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                              style={{ width: `${playback.progress}%` }}
+                            />
+                          </div>
+                        )}
                         <div className="mt-3 flex gap-4 text-xs font-semibold">
                           <div>
                             <span className="text-black/50 dark:text-white/50">Visited:</span>{" "}
-                            <span className="font-mono text-black dark:text-white">{playback.step.visited.length}</span>
+                            <span className="font-mono text-black dark:text-white">{playback.visitedCount}</span>
                           </div>
                           <div>
-                            <span className="text-black/50 dark:text-white/50">Step:</span>{" "}
-                            <span className="font-mono text-black dark:text-white">{playback.currentIndex + 1}/{playback.steps.length}</span>
+                            <span className="text-black/50 dark:text-white/50">Explored:</span>{" "}
+                            <span className="font-mono text-black dark:text-white">{playback.exploredCount}</span>
                           </div>
                         </div>
+                        {playback.currentNode && (
+                          <p className="mt-2 text-xs text-black/60 dark:text-white/60">
+                            Current node: <span className="font-mono text-black dark:text-white">{playback.currentNode}</span>
+                          </p>
+                        )}
+                        {playback.path.length > 0 && (
+                          <p className="mt-2 text-xs text-black/60 dark:text-white/60">
+                            Shortest path length: <span className="font-mono text-black dark:text-white">{playback.path.length}</span> nodes
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

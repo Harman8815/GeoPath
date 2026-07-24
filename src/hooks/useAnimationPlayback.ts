@@ -11,6 +11,7 @@ export interface AnimationState {
   description: string;
   visitedCount: number;
   exploredCount: number;
+  exploredEdges: Array<{ source: string; target: string }>;
   currentNode: string | null;
   currentEdge: { source: string; target: string } | null;
   path: string[];
@@ -46,6 +47,7 @@ export function useAnimationPlayback({
   const [description, setDescription] = useState("");
   const [visitedCount, setVisitedCount] = useState(0);
   const [exploredCount, setExploredCount] = useState(0);
+  const [exploredEdges, setExploredEdges] = useState<Array<{ source: string; target: string }>>([]);
   const [currentNode, setCurrentNode] = useState<string | null>(null);
   const [currentEdge, setCurrentEdge] = useState<{ source: string; target: string } | null>(null);
   const [path, setPath] = useState<string[]>([]);
@@ -80,6 +82,7 @@ export function useAnimationPlayback({
     setDescription(prev => prev);
     setVisitedCount(visitedSetRef.current.size);
     setExploredCount(exploredEdgesRef.current.length);
+    setExploredEdges([...exploredEdgesRef.current]);
     setCurrentNode(currentNodeRef.current);
     setCurrentEdge(currentEdgeRef.current);
   }, []);
@@ -218,6 +221,7 @@ export function useAnimationPlayback({
     setDescription("");
     setVisitedCount(0);
     setExploredCount(0);
+    setExploredEdges([]);
     setCurrentNode(null);
     setCurrentEdge(null);
     setProgress(0);
@@ -277,6 +281,7 @@ export function useAnimationPlayback({
     description,
     visitedCount,
     exploredCount,
+    exploredEdges,
     currentNode,
     currentEdge,
     path,

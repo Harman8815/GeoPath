@@ -78,11 +78,8 @@ export default function AppLayout() {
   );
 
   const exploredEdges = useMemo(() => {
-    const edgeList = graphData?.edges ?? [];
-    return playback.exploredCount > 0
-      ? edgeList.slice(0, Math.min(edgeList.length, playback.exploredCount))
-      : [];
-  }, [playback.exploredCount, graphData]);
+    return playback.exploredEdges;
+  }, [playback.exploredEdges]);
 
   const pathEdges = useMemo(() => {
     const path = playback.path;

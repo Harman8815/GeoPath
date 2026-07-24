@@ -18,13 +18,67 @@ import { MAP_STYLES, type MapStyleId } from "@/hooks/useMapStyles";
 
 type SelectionMode = "none" | "source" | "destination";
 
+const TEST_GRAPH_DATA: GraphData = {
+  nodes: [
+    { id: "test-1", label: "test-1", lat: 51.507, lon: -0.127, x: 0, y: 0 },
+    { id: "test-2", label: "test-2", lat: 51.508, lon: -0.127, x: 0, y: 0 },
+    { id: "test-3", label: "test-3", lat: 51.507, lon: -0.126, x: 0, y: 0 },
+    { id: "test-4", label: "test-4", lat: 51.508, lon: -0.126, x: 0, y: 0 },
+    { id: "test-5", label: "test-5", lat: 51.509, lon: -0.127, x: 0, y: 0 },
+  ],
+  edges: [
+    { source: "test-1", target: "test-2", weight: 100 },
+    { source: "test-2", target: "test-4", weight: 100 },
+    { source: "test-1", target: "test-3", weight: 100 },
+    { source: "test-3", target: "test-4", weight: 100 },
+    { source: "test-4", target: "test-5", weight: 100 },
+    { source: "test-2", target: "test-5", weight: 100 },
+  ],
+};
+
+const TEST_GEOJSON: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: { id: "e1", highway: "road" },
+      geometry: { type: "LineString", coordinates: [[-0.127, 51.507], [-0.127, 51.508]] },
+    },
+    {
+      type: "Feature",
+      properties: { id: "e2", highway: "road" },
+      geometry: { type: "LineString", coordinates: [[-0.127, 51.508], [-0.126, 51.508]] },
+    },
+    {
+      type: "Feature",
+      properties: { id: "e3", highway: "road" },
+      geometry: { type: "LineString", coordinates: [[-0.127, 51.507], [-0.126, 51.507]] },
+    },
+    {
+      type: "Feature",
+      properties: { id: "e4", highway: "road" },
+      geometry: { type: "LineString", coordinates: [[-0.126, 51.507], [-0.126, 51.508]] },
+    },
+    {
+      type: "Feature",
+      properties: { id: "e5", highway: "road" },
+      geometry: { type: "LineString", coordinates: [[-0.126, 51.508], [-0.127, 51.509]] },
+    },
+    {
+      type: "Feature",
+      properties: { id: "e6", highway: "road" },
+      geometry: { type: "LineString", coordinates: [[-0.127, 51.508], [-0.127, 51.509]] },
+    },
+  ],
+};
+
 export default function AppLayout() {
-  const [graphData, setGraphData] = useState<GraphData | null>(null);
-  const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [graphData, setGraphData] = useState<GraphData | null>(TEST_GRAPH_DATA);
+  const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(TEST_GEOJSON);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sourceId, setSourceId] = useState<string | null>(null);
-  const [destinationId, setDestinationId] = useState<string | null>(null);
+  const [sourceId, setSourceId] = useState<string | null>("test-1");
+  const [destinationId, setDestinationId] = useState<string | null>("test-5");
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("none");
   const [mapStyle, setMapStyle] = useState<MapStyleId>("dark");
   const [speed, setSpeed] = useState(1);
@@ -56,6 +110,7 @@ export default function AppLayout() {
     source: sourceId ?? "",
     target: destinationId ?? "",
     speed,
+    autoPlay: Boolean(sourceId && destinationId),
   });
 
   const playbackRef = useRef(playback);

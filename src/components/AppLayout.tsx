@@ -18,67 +18,48 @@ import { MAP_STYLES, type MapStyleId } from "@/hooks/useMapStyles";
 
 type SelectionMode = "none" | "source" | "destination";
 
-const TEST_GRAPH_DATA: GraphData = {
-  nodes: [
-    { id: "test-1", label: "test-1", lat: 51.507, lon: -0.127, x: 0, y: 0 },
-    { id: "test-2", label: "test-2", lat: 51.508, lon: -0.127, x: 0, y: 0 },
-    { id: "test-3", label: "test-3", lat: 51.507, lon: -0.126, x: 0, y: 0 },
-    { id: "test-4", label: "test-4", lat: 51.508, lon: -0.126, x: 0, y: 0 },
-    { id: "test-5", label: "test-5", lat: 51.509, lon: -0.127, x: 0, y: 0 },
-  ],
-  edges: [
-    { source: "test-1", target: "test-2", weight: 100 },
-    { source: "test-2", target: "test-4", weight: 100 },
-    { source: "test-1", target: "test-3", weight: 100 },
-    { source: "test-3", target: "test-4", weight: 100 },
-    { source: "test-4", target: "test-5", weight: 100 },
-    { source: "test-2", target: "test-5", weight: 100 },
-  ],
-};
+const ROAD_NETWORK_CACHE_KEY = "geopath_road_network_cache";
 
-const TEST_GEOJSON: GeoJSON.FeatureCollection = {
-  type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      properties: { id: "e1", highway: "road" },
-      geometry: { type: "LineString", coordinates: [[-0.127, 51.507], [-0.127, 51.508]] },
-    },
-    {
-      type: "Feature",
-      properties: { id: "e2", highway: "road" },
-      geometry: { type: "LineString", coordinates: [[-0.127, 51.508], [-0.126, 51.508]] },
-    },
-    {
-      type: "Feature",
-      properties: { id: "e3", highway: "road" },
-      geometry: { type: "LineString", coordinates: [[-0.127, 51.507], [-0.126, 51.507]] },
-    },
-    {
-      type: "Feature",
-      properties: { id: "e4", highway: "road" },
-      geometry: { type: "LineString", coordinates: [[-0.126, 51.507], [-0.126, 51.508]] },
-    },
-    {
-      type: "Feature",
-      properties: { id: "e5", highway: "road" },
-      geometry: { type: "LineString", coordinates: [[-0.126, 51.508], [-0.127, 51.509]] },
-    },
-    {
-      type: "Feature",
-      properties: { id: "e6", highway: "road" },
-      geometry: { type: "LineString", coordinates: [[-0.127, 51.508], [-0.127, 51.509]] },
-    },
-  ],
-};
+function loadRoadNetworkCache(): {
+  graphData: GraphData | null;
+  geoJSON: GeoJSON.FeatureCollection | null;
+  sourceId: string | null;
+  destinationId: string | null;
+} {
+  if (typeof window === "undefined") {
+    return { graphData: null, geoJSON: null, sourceId: null, destinationId: null };
+  }
+  try {
+    const cached = localStorage.getItem(ROAD_NETWORK_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached) as {
+        graphData: GraphData;
+        geoJSON: GeoJSON.FeatureCollection;
+        sourceId: string;
+        destinationId: string;
+      };
+      return {
+        graphData: parsed.graphData,
+        geoJSON: parsed.geoJSON,
+        sourceId: parsed.sourceId,
+        destinationId: parsed.destinationId,
+      };
+    }
+  } catch {
+    localStorage.removeItem(ROAD_NETWORK_CACHE_KEY);
+  }
+  return { graphData: null, geoJSON: null, sourceId: null, destinationId: null };
+}
+
+const initialCache = loadRoadNetworkCache();
 
 export default function AppLayout() {
-  const [graphData, setGraphData] = useState<GraphData | null>(TEST_GRAPH_DATA);
-  const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(TEST_GEOJSON);
+  const [graphData, setGraphData] = useState<GraphData | null>(initialCache.graphData);
+  const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(initialCache.geoJSON);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sourceId, setSourceId] = useState<string | null>("test-1");
-  const [destinationId, setDestinationId] = useState<string | null>("test-5");
+  const [sourceId, setSourceId] = useState<string | null>(initialCache.sourceId);
+  const [destinationId, setDestinationId] = useState<string | null>(initialCache.destinationId);
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("none");
   const [mapStyle, setMapStyle] = useState<MapStyleId>("dark");
   const [speed, setSpeed] = useState(1);
@@ -97,6 +78,42 @@ export default function AppLayout() {
       debugRef.current.scrollTop = debugRef.current.scrollHeight;
     }
   }, [debugLogs]);
+
+  useEffect(() => {
+    if (graphData) return;
+
+    let cancelled = false;
+    const bbox: [number, number, number, number] = [51.505, -0.130, 51.510, -0.122];
+    (async () => {
+      try {
+        const network = await fetchRoadNetwork(bbox);
+        const graph = convertToGraph(network);
+        const geo = convertToGeoJSON(network);
+        if (cancelled) return;
+        setGraphData(graph);
+        setGeoJSON(geo);
+        if (graph.nodes.length >= 2) {
+          const src = graph.nodes[0].id;
+          const dst = graph.nodes[graph.nodes.length - 1].id;
+          setSourceId(src);
+          setDestinationId(dst);
+          localStorage.setItem(ROAD_NETWORK_CACHE_KEY, JSON.stringify({ graphData: graph, geoJSON: geo, sourceId: src, destinationId: dst }));
+          appendDebug(`[Cache] Fetched and cached ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : "Failed to load road network.";
+          setError(msg);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [graphData, appendDebug]);
 
   const nodes = useMemo(() => graphData?.nodes ?? [], [graphData]);
 

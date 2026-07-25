@@ -36,17 +36,3 @@ export function arrayToRgb(array: number[]) {
   const result = `rgb${array.length >= 4 ? "a" : ""}(${rgb.join(", ")})`;
   return result;
 }
-
-export function rgbToHex(rgb: number[]) {
-  if (!rgb || rgb.length < 3) return "#000000";
-  const r = Math.round(rgb[0]).toString(16).padStart(2, "0");
-  const g = Math.round(rgb[1]).toString(16).padStart(2, "0");
-  const b = Math.round(rgb[2]).toString(16).padStart(2, "0");
-  return `#${r}${g}${b}`;
-}
-
-export function hexToRgb(hex: string) {
-  if (!hex || hex.length < 7) return [0, 0, 0];
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
-}

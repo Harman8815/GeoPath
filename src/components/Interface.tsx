@@ -237,18 +237,12 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
                 <b>Right button:</b> Place end node <br />
               </p>
               <p>The end node must be placed within the shown radius.</p>
-              <video className="video" autoPlay muted loop>
-                <source src="./videos/tutorial1.mp4" type="video/mp4"/>
-              </video>
             </div>}
             {activeStep === 1 && <div>
               <p>
                 To start the visualization, press the <b>Start Button</b> or press <b>Space</b>.<br />
                 A playback feature is available after the algorithm ends.
               </p>
-              <video className="video" autoPlay muted loop>
-                <source src="./videos/tutorial2.mp4" type="video/mp4"/>
-              </video>
             </div>}
             {activeStep === 2 && <div>
               <p>
@@ -256,9 +250,6 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
                 Try to keep the area radius only as large as you need it to be. <br />
                 Anything above <b>10km</b> is considered experimental, if you run into performance issues, stop the animation and clear the path.
               </p>
-              <video className="video" autoPlay muted loop>
-                <source src="./videos/tutorial3.mp4" type="video/mp4"/>
-              </video>
             </div>}
           </div>
           <div className="controls">

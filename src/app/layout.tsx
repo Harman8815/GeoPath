@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GeoPath - Dijkstra Pathfinding Simulator",
-  description: "Interactive Dijkstra pathfinding algorithm visualizer on real-world road networks",
+  title: "GeoPath - Pathfinding Visualizer",
+  description: "Interactive pathfinding algorithm visualizer on real-world road networks",
 };
 
 export default function RootLayout({
@@ -26,10 +24,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased theme-dark`}
+      className={"  h-full antialiased"}
     >
-      <body className="m-0 h-full w-full overflow-hidden bg-background p-0 text-foreground">
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="m-0 h-full w-full overflow-hidden bg-[#111] p-0 text-white">
+        {children}
       </body>
     </html>
   );

@@ -9,7 +9,7 @@ import { FlyToInterpolator } from "deck.gl";
 import { TripsLayer } from "@deck.gl/geo-layers";
 import { createGeoJSONCircle } from "../helpers";
 import { useEffect, useState, useRef } from "react";
-import { getBoundingBoxFromPolygon, getMapGraph, getNearestNode } from "../services/MapService";
+import { getBoundingBoxFromPolygon, getMapGraph, getNearestNode, getCurrentCachedAreas } from "../services/MapService";
 import { Graph } from "../models/Graph";
 import Interface from "./Interface";
 import { INITIAL_COLORS, INITIAL_VIEW_STATE, MAP_STYLE } from "../config";
@@ -21,6 +21,7 @@ export default function Map() {
   const [endNode, setEndNode] = useState<OverpassNode | null>(null);
   const [selectionRadius, setSelectionRadius] = useState<{ contour: number[][] }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [settings, setSettings] = useState<MapSettings>({ algorithm: "astar", radius: 4, speed: 5 });
   const [colors, setColors] = useState<ColorScheme>(INITIAL_COLORS);
   const [viewState, setViewState] = useState<ViewState>(INITIAL_VIEW_STATE);
@@ -28,6 +29,7 @@ export default function Map() {
   const [fadeRadiusReverse, setFadeRadiusReverse] = useState(false);
   const [placeEnd, setPlaceEnd] = useState(false);
   const [currentGraph, setCurrentGraph] = useState<Graph | null>(null);
+  const [cachedAreas, setCachedAreas] = useState<{ contour: number[][] }[]>([]);
 
   const interfaceRef = useRef<any>(null);
 
@@ -61,21 +63,25 @@ export default function Map() {
       }
 
       setLoading(true);
+      setApiStatus('loading');
 
       try {
         // Use existing graph to find nearest node without API call
         const node = await getNearestNode(e.coordinate[1], e.coordinate[0], currentGraph);
         if (!node) {
           interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
+          setApiStatus('error');
           setLoading(false);
           return;
         }
 
         setEndNode(node);
         setEndNodeId(node.id);
+        setApiStatus('success');
       } catch (error: any) {
         console.error("[GeoPath] Error fetching end node:", error);
         interfaceRef.current?.showSnack(error.message || "An error occurred while fetching the end node.", "error");
+        setApiStatus('error');
       } finally {
         setLoading(false);
       }
@@ -84,11 +90,13 @@ export default function Map() {
     }
 
     setLoading(true);
+    setApiStatus('loading');
 
     try {
       const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
       if (!node) {
         interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
+        setApiStatus('error');
         setLoading(false);
         return;
       }
@@ -104,9 +112,14 @@ export default function Map() {
       
       setCurrentGraph(graph);
       setGraph(graph);
+      setApiStatus('success');
+      
+      // Update cached areas visualization
+      updateCachedAreasVisualization();
     } catch (error: any) {
       console.error("[GeoPath] Error loading map graph:", error);
       interfaceRef.current?.showSnack(error.message || "An error occurred while loading the map graph.", "error");
+      setApiStatus('error');
     } finally {
       setLoading(false);
     }
@@ -162,6 +175,31 @@ export default function Map() {
     }
   };
 
+  const updateCachedAreasVisualization = () => {
+    const cachedBBoxes = getCurrentCachedAreas();
+    const contours = cachedBBoxes.map(bbox => {
+      // Convert bounding box to polygon contour
+      return [
+        [bbox.minLon, bbox.minLat],
+        [bbox.maxLon, bbox.minLat],
+        [bbox.maxLon, bbox.maxLat],
+        [bbox.minLon, bbox.maxLat],
+        [bbox.minLon, bbox.minLat], // Close the polygon
+      ];
+    });
+    setCachedAreas(contours.map(contour => ({ contour })));
+  };
+
+  // Clear status indicators after 3 seconds
+  useEffect(() => {
+    if (apiStatus === 'success' || apiStatus === 'error') {
+      const timer = setTimeout(() => {
+        setApiStatus('idle');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [apiStatus]);
+
   useEffect(() => {
     console.log("[GeoPath] Map component mounted");
     navigator.geolocation.getCurrentPosition(
@@ -183,11 +221,86 @@ export default function Map() {
 
   const selectionRadiusOpacity = fadeRadius ? (fadeRadiusReverse ? 0 : 1) : 0;
 
-  console.log("[GeoPath] Map render:", { startNode, endNode, loading, isRunning, waypoints: waypoints.length, viewState });
+  console.log("[GeoPath] Map render:", { startNode, endNode, loading, isRunning, waypoints: waypoints.length, viewState, apiStatus });
 
   return (
     <>
       <div onContextMenu={(e) => { e.preventDefault(); }} style={{ height: "100vh", width: "100vw", position: "relative", backgroundColor: "#1F242D", overflow: "hidden" }}>
+        {/* API Status Indicator */}
+        {apiStatus === 'loading' && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: '#fff',
+            padding: '10px 20px',
+            borderRadius: '20px',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '14px',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <div style={{
+              width: '16px',
+              height: '16px',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '2px solid #fff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            Loading map data...
+          </div>
+        )}
+        {apiStatus === 'success' && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 200, 100, 0.9)',
+            color: '#fff',
+            padding: '10px 20px',
+            borderRadius: '20px',
+            zIndex: 1000,
+            fontSize: '14px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            ✓ Data loaded successfully
+          </div>
+        )}
+        {apiStatus === 'error' && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(200, 50, 50, 0.9)',
+            color: '#fff',
+            padding: '10px 20px',
+            borderRadius: '20px',
+            zIndex: 1000,
+            fontSize: '14px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            ✗ Failed to load data
+          </div>
+        )}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
         <DeckGL
           initialViewState={viewState}
           controller={{ doubleClickZoom: false, keyboard: false }}
@@ -205,6 +318,17 @@ export default function Map() {
             getLineColor={[9, 142, 46, 175]}
             getLineWidth={3}
             opacity={selectionRadiusOpacity}
+          />
+          <PolygonLayer
+            id={"cached-areas"}
+            data={cachedAreas}
+            pickable={false}
+            stroked={true}
+            getPolygon={(d: any) => d.contour}
+            getFillColor={[0, 100, 255, 20]}
+            getLineColor={[0, 100, 255, 150]}
+            getLineWidth={2}
+            opacity={1}
           />
           <TripsLayer
             id={"pathfinding-layer"}

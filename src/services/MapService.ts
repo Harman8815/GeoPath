@@ -3,35 +3,85 @@ import { createGeoJSONCircle } from "../helpers";
 import { Graph } from "../models/Graph";
 import type { OverpassNode, OverpassWay, BoundingBox } from "../types";
 
-// Cache for graph data to avoid redundant API calls
-const graphCache = new Map<string, { graph: Graph; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Enhanced area-based caching with buffer zones
+interface CachedArea {
+  boundingBox: BoundingBox;
+  graph: Graph;
+  timestamp: number;
+}
+
+const areaCache = new Map<string, CachedArea>();
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const BUFFER_FACTOR = 1.5; // Fetch 1.5x the requested area as buffer
 
 function getCacheKey(boundingBox: BoundingBox): string {
   return `${boundingBox.minLat.toFixed(4)}_${boundingBox.minLon.toFixed(4)}_${boundingBox.maxLat.toFixed(4)}_${boundingBox.maxLon.toFixed(4)}`;
 }
 
-function getCachedGraph(boundingBox: BoundingBox): Graph | null {
-  const key = getCacheKey(boundingBox);
-  const cached = graphCache.get(key);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log("[GeoPath] Using cached graph data");
-    return cached.graph;
+function expandBoundingBox(bbox: BoundingBox, factor: number): BoundingBox {
+  const latRange = bbox.maxLat - bbox.minLat;
+  const lonRange = bbox.maxLon - bbox.minLon;
+  const latBuffer = (latRange * (factor - 1)) / 2;
+  const lonBuffer = (lonRange * (factor - 1)) / 2;
+
+  return {
+    minLat: Math.max(bbox.minLat - latBuffer, -90),
+    maxLat: Math.min(bbox.maxLat + latBuffer, 90),
+    minLon: Math.max(bbox.minLon - lonBuffer, -180),
+    maxLon: Math.min(bbox.maxLon + lonBuffer, 180),
+  };
+}
+
+function isBoundingBoxContained(requested: BoundingBox, cached: BoundingBox): boolean {
+  return (
+    requested.minLat >= cached.minLat &&
+    requested.maxLat <= cached.maxLat &&
+    requested.minLon >= cached.minLon &&
+    requested.maxLon <= cached.maxLon
+  );
+}
+
+function getCachedArea(requestedBBox: BoundingBox): CachedArea | null {
+  for (const [key, cached] of areaCache) {
+    if (Date.now() - cached.timestamp > CACHE_DURATION) {
+      areaCache.delete(key);
+      continue;
+    }
+
+    if (isBoundingBoxContained(requestedBBox, cached.boundingBox)) {
+      console.log("[GeoPath] Using cached area data for requested bbox");
+      return cached;
+    }
   }
-  
+
   return null;
 }
 
-function setCachedGraph(boundingBox: BoundingBox, graph: Graph): void {
+function setCachedArea(boundingBox: BoundingBox, graph: Graph): void {
   const key = getCacheKey(boundingBox);
-  graphCache.set(key, { graph, timestamp: Date.now() });
-  
+  areaCache.set(key, {
+    boundingBox,
+    graph,
+    timestamp: Date.now(),
+  });
+
   // Clean up old entries
-  if (graphCache.size > 10) {
-    const oldestKey = Array.from(graphCache.keys())[0];
-    graphCache.delete(oldestKey);
+  if (areaCache.size > 5) {
+    const oldestKey = Array.from(areaCache.keys())[0];
+    areaCache.delete(oldestKey);
   }
+
+  console.log("[GeoPath] Cached area data for bbox:", boundingBox);
+}
+
+export function getCurrentCachedAreas(): BoundingBox[] {
+  const validAreas: BoundingBox[] = [];
+  for (const [key, cached] of areaCache) {
+    if (Date.now() - cached.timestamp <= CACHE_DURATION) {
+      validAreas.push(cached.boundingBox);
+    }
+  }
+  return validAreas;
 }
 
 export async function getNearestNode(latitude: number, longitude: number, existingGraph?: Graph | null): Promise<OverpassNode | null> {
@@ -105,15 +155,17 @@ export async function getNearestNode(latitude: number, longitude: number, existi
 export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number): Promise<Graph> {
   try {
     // Check cache first
-    const cached = getCachedGraph(boundingBox);
+    const cached = getCachedArea(boundingBox);
     if (cached) {
       console.log("[GeoPath] getMapGraph using cached data");
-      return cached;
+      return cached.graph;
     }
 
-    console.log("[GeoPath] getMapGraph called with bbox:", boundingBox, "startNodeId:", startNodeId);
+    // Expand bounding box with buffer zone
+    const expandedBBox = expandBoundingBox(boundingBox, BUFFER_FACTOR);
+    console.log("[GeoPath] getMapGraph called with expanded bbox:", expandedBBox, "startNodeId:", startNodeId);
     
-    const response = await fetchOverpassData(boundingBox);
+    const response = await fetchOverpassData(expandedBBox);
     const data = await response.json();
     const elements = data.elements;
     console.log("[GeoPath] getMapGraph response elements count:", elements?.length);
@@ -159,8 +211,8 @@ export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number)
       throw err;
     }
 
-    // Cache the graph
-    setCachedGraph(boundingBox, graph);
+    // Cache the expanded area
+    setCachedArea(expandedBBox, graph);
 
     const totalEdges = graph.getEdges().size;
     console.log("[GeoPath] getMapGraph success, nodes:", graph.getNodes().size, "edges:", totalEdges);

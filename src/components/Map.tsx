@@ -22,6 +22,7 @@ export default function Map() {
   const [selectionRadius, setSelectionRadius] = useState<{ contour: number[][] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [fetchingArea, setFetchingArea] = useState<{ contour: number[][] } | null>(null);
   const [settings, setSettings] = useState<MapSettings>({ algorithm: "astar", radius: 4, speed: 5 });
   const [colors, setColors] = useState<ColorScheme>(INITIAL_COLORS);
   const [viewState, setViewState] = useState<ViewState>(INITIAL_VIEW_STATE);
@@ -98,6 +99,7 @@ export default function Map() {
         interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
         setApiStatus('error');
         setLoading(false);
+        setFetchingArea(null);
         return;
       }
 
@@ -108,11 +110,29 @@ export default function Map() {
       setSelectionRadius([{ contour: circle }]);
 
       const boundingBox = getBoundingBoxFromPolygon(circle);
+      
+      // Show fetching area visualization (expanded with buffer)
+      const expandedBBox = {
+        minLat: boundingBox.minLat - (boundingBox.maxLat - boundingBox.minLat) * 0.25,
+        maxLat: boundingBox.maxLat + (boundingBox.maxLat - boundingBox.minLat) * 0.25,
+        minLon: boundingBox.minLon - (boundingBox.maxLon - boundingBox.minLon) * 0.25,
+        maxLon: boundingBox.maxLon + (boundingBox.maxLon - boundingBox.minLon) * 0.25,
+      };
+      const fetchingContour = [
+        [expandedBBox.minLon, expandedBBox.minLat],
+        [expandedBBox.maxLon, expandedBBox.minLat],
+        [expandedBBox.maxLon, expandedBBox.maxLat],
+        [expandedBBox.minLon, expandedBBox.maxLat],
+        [expandedBBox.minLon, expandedBBox.minLat],
+      ];
+      setFetchingArea({ contour: fetchingContour });
+
       const graph = await getMapGraph(boundingBox, node.id);
       
       setCurrentGraph(graph);
       setGraph(graph);
       setApiStatus('success');
+      setFetchingArea(null);
       
       // Update cached areas visualization
       updateCachedAreasVisualization();
@@ -120,6 +140,7 @@ export default function Map() {
       console.error("[GeoPath] Error loading map graph:", error);
       interfaceRef.current?.showSnack(error.message || "An error occurred while loading the map graph.", "error");
       setApiStatus('error');
+      setFetchingArea(null);
     } finally {
       setLoading(false);
     }
@@ -330,6 +351,19 @@ export default function Map() {
             getLineWidth={2}
             opacity={1}
           />
+          {fetchingArea && (
+            <PolygonLayer
+              id={"fetching-area"}
+              data={[fetchingArea]}
+              pickable={false}
+              stroked={true}
+              getPolygon={(d: any) => d.contour}
+              getFillColor={[255, 165, 0, 30]}
+              getLineColor={[255, 165, 0, 200]}
+              getLineWidth={3}
+              opacity={1}
+            />
+          )}
           <TripsLayer
             id={"pathfinding-layer"}
             data={waypoints}

@@ -3,288 +3,186 @@
 import DeckGL from "@deck.gl/react";
 import { Map as MapGL } from "react-map-gl";
 import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { FlyToInterpolator } from "deck.gl";
 import { TripsLayer } from "@deck.gl/geo-layers";
 import { createGeoJSONCircle } from "../helpers";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { getBoundingBoxFromPolygon, getMapGraph, getNearestNode } from "../services/MapService";
-import PathfindingState from "../models/PathfindingState";
+import { Graph } from "../models/Graph";
 import Interface from "./Interface";
 import { INITIAL_COLORS, INITIAL_VIEW_STATE, MAP_STYLE } from "../config";
-import useSmoothStateChange from "../hooks/useSmoothStateChange";
+import { usePathfinding } from "../hooks/usePathfinding";
+import type { OverpassNode, MapSettings, ColorScheme, ViewState } from "../types";
 
 export default function Map() {
-  const [startNode, setStartNode] = useState<any>(null);
-  const [endNode, setEndNode] = useState<any>(null);
-  const [selectionRadius, setSelectionRadius] = useState<any>([]);
-  const [tripsData, setTripsData] = useState<any>([]);
-  const [started, setStarted] = useState(false);
-  const [time, setTime] = useState(0);
-  const [animationEnded, setAnimationEnded] = useState(false);
-  const [playbackOn, setPlaybackOn] = useState(false);
-  const [playbackDirection, setPlaybackDirection] = useState(1);
-  const [fadeRadiusReverse, setFadeRadiusReverse] = useState(false);
-  const [cinematic, setCinematic] = useState(false);
-  const [placeEnd, setPlaceEnd] = useState(false);
+  const [startNode, setStartNode] = useState<OverpassNode | null>(null);
+  const [endNode, setEndNode] = useState<OverpassNode | null>(null);
+  const [selectionRadius, setSelectionRadius] = useState<{ contour: number[][] }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState({ algorithm: "astar", radius: 4, speed: 5 });
-  const [colors, setColors] = useState(INITIAL_COLORS);
-  const [viewState, setViewState] = useState<any>(INITIAL_VIEW_STATE);
-  const ui = useRef<any>(null);
-  const fadeRadius = useRef(false);
-  const requestRef = useRef<number | null>(null);
-  const previousTimeRef = useRef<number | null>(null);
-  const timer = useRef(0);
-  const waypoints = useRef<any>([]);
-  const state = useRef(new PathfindingState());
-  const traceNode = useRef<any>(null);
-  const traceNode2 = useRef<any>(null);
-  const selectionRadiusOpacity = useSmoothStateChange(0, 0, 1, 400, fadeRadius.current, fadeRadiusReverse);
+  const [settings, setSettings] = useState<MapSettings>({ algorithm: "astar", radius: 4, speed: 5 });
+  const [colors, setColors] = useState<ColorScheme>(INITIAL_COLORS);
+  const [viewState, setViewState] = useState<ViewState>(INITIAL_VIEW_STATE);
+  const [fadeRadius, setFadeRadius] = useState(false);
+  const [fadeRadiusReverse, setFadeRadiusReverse] = useState(false);
+  const [placeEnd, setPlaceEnd] = useState(false);
 
-  async function mapClick(e: any, info: any, radius: number | null = null) {
-    if (started && !animationEnded) return;
+  const {
+    isRunning,
+    isFinished,
+    waypoints,
+    startPathfinding,
+    resetPathfinding,
+    setGraph,
+    setEndNodeId,
+    timer,
+  } = usePathfinding();
+
+  const handleMapClick = async (e: any, info: any, radius: number | null = null) => {
+    if (isRunning) return;
 
     setFadeRadiusReverse(false);
-    fadeRadius.current = true;
-    clearPath();
+    setFadeRadius(true);
+    resetPathfinding();
 
     if (info.rightButton || placeEnd) {
       if (e.layer?.id !== "selection-radius") {
-        ui.current?.showSnack("Please select a point inside the radius.", "info");
         return;
       }
 
-      if (loading) {
-        ui.current?.showSnack("Please wait for all data to load.", "info");
-        return;
+      if (loading) return;
+
+      setLoading(true);
+
+      try {
+        const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
+        if (!node) {
+          setLoading(false);
+          return;
+        }
+
+        setEndNode(node);
+        setEndNodeId(node.id);
+      } catch (error) {
+        console.error("[GeoPath] Error fetching end node:", error);
+      } finally {
+        setLoading(false);
       }
 
-      const loadingHandle = setTimeout(() => {
-        setLoading(true);
-      }, 300);
+      return;
+    }
 
+    setLoading(true);
+
+    try {
       const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
       if (!node) {
-        ui.current?.showSnack("No path was found in the vicinity, please try another location.");
-        clearTimeout(loadingHandle);
         setLoading(false);
         return;
       }
 
-      const realEndNode = state.current.getNode(node.id);
-      setEndNode(node);
+      setStartNode(node);
+      setEndNode(null);
+      
+      const circle = createGeoJSONCircle([node.lon, node.lat], radius ?? settings.radius);
+      setSelectionRadius([{ contour: circle }]);
 
-      clearTimeout(loadingHandle);
+      const boundingBox = getBoundingBoxFromPolygon(circle);
+      const graph = await getMapGraph(boundingBox, node.id);
+      
+      setGraph(graph);
+    } catch (error) {
+      console.error("[GeoPath] Error loading map graph:", error);
+    } finally {
       setLoading(false);
-
-      if (!realEndNode) {
-        ui.current?.showSnack("An error occurred. Please try again.");
-        return;
-      }
-      state.current.endNode = realEndNode;
-
-      return;
     }
+  };
 
-    const loadingHandle = setTimeout(() => {
-      setLoading(true);
-    }, 300);
-
-    const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
-    if (!node) {
-      ui.current?.showSnack("No path was found in the vicinity, please try another location.");
-      clearTimeout(loadingHandle);
-      setLoading(false);
-      return;
-    }
-
-    setStartNode(node);
-    setEndNode(null);
-    const circle = createGeoJSONCircle([node.lon, node.lat], radius ?? settings.radius);
-    setSelectionRadius([{ contour: circle }]);
-
-    getMapGraph(getBoundingBoxFromPolygon(circle), node.id).then((graph) => {
-      state.current.graph = graph;
-      clearPath();
-      clearTimeout(loadingHandle);
-      setLoading(false);
-    });
-  }
-
-  function startPathfinding() {
+  const handleStartPathfinding = () => {
+    if (!startNode || !endNode) return;
+    
     setFadeRadiusReverse(true);
     setTimeout(() => {
-      clearPath();
-      state.current.start(settings.algorithm);
-      setStarted(true);
+      resetPathfinding();
+      startPathfinding(settings.algorithm);
     }, 400);
-  }
+  };
 
-  function toggleAnimation(loop = true, direction = 1) {
-    if (time === 0 && !animationEnded) return;
-    setPlaybackDirection(direction);
-    if (animationEnded) {
-      if (loop && time >= timer.current) {
-        setTime(0);
-      }
-      setStarted(true);
-      setPlaybackOn(!playbackOn);
-      return;
-    }
-    setStarted(!started);
-    if (started) {
-      previousTimeRef.current = null;
-    }
-  }
+  const handleClearPath = () => {
+    resetPathfinding();
+    setStartNode(null);
+    setEndNode(null);
+    setSelectionRadius([]);
+  };
 
-  function clearPath() {
-    setStarted(false);
-    setTripsData([]);
-    setTime(0);
-    state.current.reset();
-    waypoints.current = [];
-    timer.current = 0;
-    previousTimeRef.current = null;
-    traceNode.current = null;
-    traceNode2.current = null;
-    setAnimationEnded(false);
-  }
-
-  function animateStep(newTime: number) {
-    const updatedNodes = state.current.nextStep();
-    for (const updatedNode of updatedNodes) {
-      updateWaypoints(updatedNode, updatedNode.referer);
-    }
-
-    if (state.current.finished && !animationEnded) {
-      if (settings.algorithm === "bidirectional") {
-        if (!traceNode.current) traceNode.current = updatedNodes[0];
-        const parentNode = traceNode.current.parent;
-        updateWaypoints(parentNode, traceNode.current, "route", Math.max(Math.log2(settings.speed), 1));
-        traceNode.current = parentNode ?? traceNode.current;
-
-        if (!traceNode2.current) {
-          traceNode2.current = updatedNodes[0];
-          traceNode2.current.parent = traceNode2.current.prevParent;
-        }
-        const parentNode2 = traceNode2.current.parent;
-        updateWaypoints(parentNode2, traceNode2.current, "route", Math.max(Math.log2(settings.speed), 1));
-        traceNode2.current = parentNode2 ?? traceNode2.current;
-        setAnimationEnded(time >= timer.current && parentNode == null && parentNode2 == null);
-      } else {
-        if (!traceNode.current) traceNode.current = state.current.endNode;
-        const parentNode = traceNode.current.parent;
-        updateWaypoints(parentNode, traceNode.current, "route", Math.max(Math.log2(settings.speed), 1));
-        traceNode.current = parentNode ?? traceNode.current;
-        setAnimationEnded(time >= timer.current && parentNode == null);
-      }
-    }
-
-    if (previousTimeRef.current != null && !animationEnded) {
-      const deltaTime = newTime - previousTimeRef.current;
-      setTime((prevTime) => prevTime + deltaTime * playbackDirection);
-    }
-
-    if (previousTimeRef.current != null && animationEnded && playbackOn) {
-      const deltaTime = newTime - previousTimeRef.current;
-      if (time >= timer.current && playbackDirection !== -1) {
-        setPlaybackOn(false);
-      }
-      setTime((prevTime) => Math.max(Math.min(prevTime + deltaTime * 2 * playbackDirection, timer.current), 0));
-    }
-  }
-
-  function animate(newTime: number) {
-    for (let i = 0; i < settings.speed; i++) {
-      animateStep(newTime);
-    }
-
-    previousTimeRef.current = newTime;
-    requestRef.current = requestAnimationFrame(animate);
-  }
-
-  function updateWaypoints(node: any, refererNode: any, color = "path", timeMultiplier = 1) {
-    if (!node || !refererNode) return;
-    const distance = Math.hypot(node.longitude - refererNode.longitude, node.latitude - refererNode.latitude);
-    const timeAdd = distance * 50000 * timeMultiplier;
-
-    waypoints.current = [
-      ...waypoints.current,
-      {
-        path: [[refererNode.longitude, refererNode.latitude], [node.longitude, node.latitude]],
-        timestamps: [timer.current, timer.current + timeAdd],
-        color,
-      },
-    ];
-
-    timer.current += timeAdd;
-    setTripsData(() => waypoints.current);
-  }
-
-  function changeLocation(location: any) {
-    setViewState({ ...viewState, longitude: location.longitude, latitude: location.latitude, zoom: 13, transitionDuration: 1, transitionInterpolator: new FlyToInterpolator() });
-  }
-
-  function changeSettings(newSettings: any) {
-    setSettings(newSettings);
-    const items = { settings: newSettings, colors };
-    localStorage.setItem("path_settings", JSON.stringify(items));
-  }
-
-  function changeColors(newColors: any) {
-    setColors(newColors);
-    const items = { settings, colors: newColors };
-    localStorage.setItem("path_settings", JSON.stringify(items));
-  }
-
-  function changeAlgorithm(algorithm: string) {
-    clearPath();
-    changeSettings({ ...settings, algorithm });
-  }
-
-  function changeRadius(radius: number) {
-    changeSettings({ ...settings, radius });
-    if (startNode) {
-      mapClick({ coordinate: [startNode.lon, startNode.lat] }, {}, radius);
-    }
-  }
-
-  useEffect(() => {
-    if (!started) return;
-    requestRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
-  }, [started, time, animationEnded, playbackOn]);
-
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition((res) => {
-      changeLocation(res.coords);
+  const handleLocationChange = (location: any) => {
+    setViewState({ 
+      ...viewState, 
+      longitude: location.longitude, 
+      latitude: location.latitude, 
+      zoom: 13, 
+      transitionDuration: 1, 
+      transitionInterpolator: new FlyToInterpolator() 
     });
+  };
 
-    const settings = localStorage.getItem("path_settings");
-    if (!settings) return;
-    const items = JSON.parse(settings);
+  const handleSettingsChange = (newSettings: MapSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem("path_settings", JSON.stringify({ settings: newSettings, colors }));
+  };
 
-    setSettings(items.settings);
-    setColors(items.colors);
+  const handleColorsChange = (newColors: ColorScheme) => {
+    setColors(newColors);
+    localStorage.setItem("path_settings", JSON.stringify({ settings, colors: newColors }));
+  };
+
+  const handleAlgorithmChange = (algorithm: string) => {
+    handleClearPath();
+    handleSettingsChange({ ...settings, algorithm: algorithm as any });
+  };
+
+  const handleRadiusChange = (radius: number) => {
+    handleSettingsChange({ ...settings, radius });
+    if (startNode) {
+      handleMapClick({ coordinate: [startNode.lon, startNode.lat] }, {}, radius);
+    }
+  };
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (res) => handleLocationChange(res.coords),
+      (err) => console.log("[GeoPath] Geolocation error:", err)
+    );
+
+    const savedSettings = localStorage.getItem("path_settings");
+    if (savedSettings) {
+      try {
+        const items = JSON.parse(savedSettings);
+        setSettings(items.settings);
+        setColors(items.colors);
+      } catch (error) {
+        console.error("[GeoPath] Error loading settings:", error);
+      }
+    }
   }, []);
+
+  const selectionRadiusOpacity = fadeRadius ? (fadeRadiusReverse ? 0 : 1) : 0;
 
   return (
     <>
-      <div onContextMenu={(e) => { e.preventDefault(); }}>
+      <div onContextMenu={(e) => { e.preventDefault(); }} style={{ height: "100vh", width: "100vw", position: "relative" }}>
         <DeckGL
           initialViewState={viewState}
           controller={{ doubleClickZoom: false, keyboard: false }}
-          onClick={mapClick}
+          onClick={handleMapClick}
         >
           <PolygonLayer
             id={"selection-radius"}
             data={selectionRadius}
             pickable={true}
             stroked={true}
-             getPolygon={(d: any) => d.contour}
+            getPolygon={(d: any) => d.contour}
             getFillColor={[80, 210, 0, 10]}
             getLineColor={[9, 142, 46, 175]}
             getLineWidth={3}
@@ -292,12 +190,12 @@ export default function Map() {
           />
           <TripsLayer
             id={"pathfinding-layer"}
-            data={tripsData}
+            data={waypoints}
             opacity={1}
             widthMinPixels={3}
             widthMaxPixels={5}
             fadeTrail={false}
-            currentTime={time}
+            currentTime={timer}
             getColor={(d: any) => colors[d.color as keyof typeof colors]}
             updateTriggers={{
               getColor: [colors.path, colors.route],
@@ -327,33 +225,34 @@ export default function Map() {
             mapLib={maplibregl as any}
             mapStyle={MAP_STYLE}
             doubleClickZoom={false}
+            onLoad={() => console.log("[GeoPath] MapGL onLoad")}
+            onError={(e: any) => console.error("[GeoPath] MapGL error:", e)}
           />
         </DeckGL>
       </div>
       <Interface
-        ref={ui}
-        canStart={startNode && endNode}
-        started={started}
-        animationEnded={animationEnded}
-        playbackOn={playbackOn}
-        time={time}
-        maxTime={timer.current}
+        canStart={!!startNode && !!endNode}
+        started={isRunning}
+        animationEnded={isFinished}
+        playbackOn={false}
+        time={timer}
+        maxTime={timer}
         settings={settings}
         colors={colors}
         loading={loading}
-        cinematic={cinematic}
+        cinematic={false}
         placeEnd={placeEnd}
-        startPathfinding={startPathfinding}
-        toggleAnimation={toggleAnimation}
-        clearPath={clearPath}
-        timeChanged={setTime}
-        changeLocation={changeLocation}
-        setSettings={changeSettings}
-        changeAlgorithm={changeAlgorithm}
-        setColors={changeColors}
-        setCinematic={setCinematic}
+        startPathfinding={handleStartPathfinding}
+        toggleAnimation={() => {}}
+        clearPath={handleClearPath}
+        timeChanged={() => {}}
+        changeLocation={handleLocationChange}
+        setSettings={handleSettingsChange}
+        changeAlgorithm={handleAlgorithmChange}
+        setColors={handleColorsChange}
+        setCinematic={() => {}}
         setPlaceEnd={setPlaceEnd}
-        changeRadius={changeRadius}
+        changeRadius={handleRadiusChange}
       />
       <div className="attrib-container">
         <summary className="maplibregl-ctrl-attrib-button" title="Toggle attribution" aria-label="Toggle attribution"></summary>

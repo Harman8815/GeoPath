@@ -41,6 +41,7 @@ interface InterfaceProps {
 }
 
 const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "info" | "success" | "warning") => void }, InterfaceProps>(({ canStart, started, animationEnded, playbackOn, time, maxTime, settings, colors, loading, timeChanged, cinematic, placeEnd, changeRadius, changeAlgorithm, setPlaceEnd, setCinematic, setSettings, setColors, startPathfinding, toggleAnimation, clearPath, changeLocation }, ref) => {
+  console.log("[GeoPath] Interface render:", { canStart, started, animationEnded, loading });
   const [sidebar, setSidebar] = useState(false);
   const [snack, setSnack] = useState<{ open: boolean; message: string; type: "error" | "info" | "success" | "warning" }>({
     open: false,
@@ -120,6 +121,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
 
   useEffect(() => {
     if (!cinematic) return;
+    console.log("[GeoPath] Cinematic mode enabled");
     setHelper(true);
     setTimeout(() => {
       helperTime.current = 2500;
@@ -128,6 +130,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
 
   useEffect(() => {
     if (localStorage.getItem("path_sawtutorial")) return;
+    console.log("[GeoPath] Showing tutorial for first time");
     setShowTutorial(true);
     localStorage.setItem("path_sawtutorial", "true");
   }, []);

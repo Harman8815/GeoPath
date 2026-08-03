@@ -150,6 +150,7 @@ export default function Map() {
   };
 
   useEffect(() => {
+    console.log("[GeoPath] Map component mounted");
     navigator.geolocation.getCurrentPosition(
       (res) => handleLocationChange(res.coords),
       (err) => console.log("[GeoPath] Geolocation error:", err)
@@ -169,13 +170,17 @@ export default function Map() {
 
   const selectionRadiusOpacity = fadeRadius ? (fadeRadiusReverse ? 0 : 1) : 0;
 
+  console.log("[GeoPath] Map render:", { startNode, endNode, loading, isRunning, waypoints: waypoints.length, viewState });
+
   return (
     <>
-      <div onContextMenu={(e) => { e.preventDefault(); }} style={{ height: "100vh", width: "100vw", position: "relative" }}>
+      <div onContextMenu={(e) => { e.preventDefault(); }} style={{ height: "100vh", width: "100vw", position: "relative", backgroundColor: "#1F242D", overflow: "hidden" }}>
         <DeckGL
           initialViewState={viewState}
           controller={{ doubleClickZoom: false, keyboard: false }}
           onClick={handleMapClick}
+          style={{ width: "100%", height: "100%" }}
+          getTooltip={() => null}
         >
           <PolygonLayer
             id={"selection-radius"}
@@ -225,8 +230,9 @@ export default function Map() {
             mapLib={maplibregl as any}
             mapStyle={MAP_STYLE}
             doubleClickZoom={false}
-            onLoad={() => console.log("[GeoPath] MapGL onLoad")}
+            onLoad={() => console.log("[GeoPath] MapGL onLoad - map loaded successfully")}
             onError={(e: any) => console.error("[GeoPath] MapGL error:", e)}
+            style={{ width: "100%", height: "100%" }}
           />
         </DeckGL>
       </div>

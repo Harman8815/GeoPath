@@ -16,12 +16,26 @@ export function fetchOverpassData(boundingBox: BoundingBox) {
 
   return fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
     body: query,
-  }).then((res) => {
-    console.log("[GeoPath] Overpass response status:", res.status);
+  }).then(async (res) => {
+    console.log("[GeoPath] Overpass response status:", res.status, res.statusText);
     if (!res.ok) {
       console.error("[GeoPath] Overpass response not ok:", res.status, res.statusText);
+      throw new Error(`Overpass API error: ${res.status} ${res.statusText}`);
     }
+
+    const contentType = res.headers.get("content-type");
+    console.log("[GeoPath] Overpass response content-type:", contentType);
+
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("[GeoPath] Overpass returned non-JSON response:", text.substring(0, 200));
+      throw new Error("Overpass API returned non-JSON response (server may be overloaded)");
+    }
+
     return res;
   });
 }

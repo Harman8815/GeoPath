@@ -1,6 +1,6 @@
 import type { ColorScheme, ViewState } from "./types";
 
-export const MAP_STYLE = "/map_style.json";
+export const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
 export const INITIAL_VIEW_STATE: ViewState = {
   longitude: -0.127,

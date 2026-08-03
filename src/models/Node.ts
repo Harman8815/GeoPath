@@ -1,52 +1,63 @@
-// @ts-ignore
-import Edge from "./Edge";
+import type { Edge } from './Edge';
 
-export default class Node {
-  id: number;
-  latitude: number;
-  longitude: number;
-  edges: any[];
+export interface Neighbor {
+  edgeId: string;
+  nodeId: number;
+  weight: number;
+}
+
+export class Node {
+  readonly id: number;
+  readonly latitude: number;
+  readonly longitude: number;
+  private neighbors: Map<string, Neighbor>;
   visited: boolean;
   distanceFromStart: number;
   distanceToEnd: number;
-  parent: Node | null;
-  referer: Node | null;
+  parent: number | null;
+  referer: number | null;
 
   constructor(id: number, latitude: number, longitude: number) {
-    this.edges = [];
-    this.distanceFromStart = 0;
-    this.distanceToEnd = 0;
-    this.parent = null;
-    this.referer = null;
     this.id = id;
     this.latitude = latitude;
     this.longitude = longitude;
-    this.visited = false;
-  }
-
-  get totalDistance() {
-    return this.distanceFromStart + this.distanceToEnd;
-  }
-
-  get neighbors() {
-    return this.edges.map((edge: any) => ({ edge, node: edge.getOtherNode(this) }));
-  }
-
-  connectTo(node: Node) {
-    const edge = new Edge(this, node);
-    this.edges.push(edge);
-    node.edges.push(edge);
-  }
-
-  reset() {
+    this.neighbors = new Map();
     this.visited = false;
     this.distanceFromStart = 0;
     this.distanceToEnd = 0;
     this.parent = null;
     this.referer = null;
+  }
 
-    for (const neighbor of this.neighbors) {
-      neighbor.edge.visited = false;
-    }
+  get totalDistance(): number {
+    return this.distanceFromStart + this.distanceToEnd;
+  }
+
+  getNeighbors(): Neighbor[] {
+    return Array.from(this.neighbors.values());
+  }
+
+  addNeighbor(edgeId: string, nodeId: number, weight: number): void {
+    this.neighbors.set(edgeId, { edgeId, nodeId, weight });
+  }
+
+  reset(): void {
+    this.visited = false;
+    this.distanceFromStart = 0;
+    this.distanceToEnd = 0;
+    this.parent = null;
+    this.referer = null;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      latitude: this.latitude,
+      longitude: this.longitude,
+      visited: this.visited,
+      distanceFromStart: this.distanceFromStart,
+      distanceToEnd: this.distanceToEnd,
+      parent: this.parent,
+    };
   }
 }

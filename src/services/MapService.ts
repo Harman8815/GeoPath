@@ -3,8 +3,59 @@ import { createGeoJSONCircle } from "../helpers";
 import { Graph } from "../models/Graph";
 import type { OverpassNode, OverpassWay, BoundingBox } from "../types";
 
-export async function getNearestNode(latitude: number, longitude: number): Promise<OverpassNode | null> {
+// Cache for graph data to avoid redundant API calls
+const graphCache = new Map<string, { graph: Graph; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(boundingBox: BoundingBox): string {
+  return `${boundingBox.minLat.toFixed(4)}_${boundingBox.minLon.toFixed(4)}_${boundingBox.maxLat.toFixed(4)}_${boundingBox.maxLon.toFixed(4)}`;
+}
+
+function getCachedGraph(boundingBox: BoundingBox): Graph | null {
+  const key = getCacheKey(boundingBox);
+  const cached = graphCache.get(key);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log("[GeoPath] Using cached graph data");
+    return cached.graph;
+  }
+  
+  return null;
+}
+
+function setCachedGraph(boundingBox: BoundingBox, graph: Graph): void {
+  const key = getCacheKey(boundingBox);
+  graphCache.set(key, { graph, timestamp: Date.now() });
+  
+  // Clean up old entries
+  if (graphCache.size > 10) {
+    const oldestKey = Array.from(graphCache.keys())[0];
+    graphCache.delete(oldestKey);
+  }
+}
+
+export async function getNearestNode(latitude: number, longitude: number, existingGraph?: Graph | null): Promise<OverpassNode | null> {
   try {
+    // First check if we can find the node in the existing graph
+    if (existingGraph) {
+      const nodes = existingGraph.getNodes();
+      let result: OverpassNode | null = null;
+      let minDistance = Infinity;
+
+      for (const [id, node] of nodes) {
+        const distance = calculateDistance(latitude, longitude, node.latitude, node.longitude);
+        if (distance < minDistance) {
+          minDistance = distance;
+          result = { id, lat: node.latitude, lon: node.longitude, type: 'node' };
+        }
+      }
+
+      if (result && minDistance < 0.5) { // Within 0.5 degrees
+        console.log("[GeoPath] Found nearest node in existing graph:", result);
+        return result;
+      }
+    }
+
     const circle = createGeoJSONCircle([longitude, latitude], 0.15);
     const boundingBox = getBoundingBoxFromPolygon(circle);
     console.log("[GeoPath] getNearestNode called for:", { latitude, longitude, boundingBox });
@@ -34,14 +85,32 @@ export async function getNearestNode(latitude: number, longitude: number): Promi
 
     console.log("[GeoPath] getNearestNode result:", result);
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error("[GeoPath] getNearestNode error:", error);
+    
+    // Check if it's a rate limit error
+    if (error.message?.includes("429") || error.message?.includes("Too Many Requests")) {
+      throw new Error("Overpass API rate limit exceeded. Please wait a moment before trying again.");
+    }
+    
+    // Check if it's a gateway timeout
+    if (error.message?.includes("504") || error.message?.includes("Gateway Timeout")) {
+      throw new Error("Overpass API is currently overloaded. Please try again in a few moments.");
+    }
+    
     return null;
   }
 }
 
 export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number): Promise<Graph> {
   try {
+    // Check cache first
+    const cached = getCachedGraph(boundingBox);
+    if (cached) {
+      console.log("[GeoPath] getMapGraph using cached data");
+      return cached;
+    }
+
     console.log("[GeoPath] getMapGraph called with bbox:", boundingBox, "startNodeId:", startNodeId);
     
     const response = await fetchOverpassData(boundingBox);
@@ -90,11 +159,25 @@ export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number)
       throw err;
     }
 
+    // Cache the graph
+    setCachedGraph(boundingBox, graph);
+
     const totalEdges = graph.getEdges().size;
     console.log("[GeoPath] getMapGraph success, nodes:", graph.getNodes().size, "edges:", totalEdges);
     return graph;
-  } catch (error) {
+  } catch (error: any) {
     console.error("[GeoPath] getMapGraph error:", error);
+    
+    // Check if it's a rate limit error
+    if (error.message?.includes("429") || error.message?.includes("Too Many Requests")) {
+      throw new Error("Overpass API rate limit exceeded. Please wait a moment before trying again.");
+    }
+    
+    // Check if it's a gateway timeout
+    if (error.message?.includes("504") || error.message?.includes("Gateway Timeout")) {
+      throw new Error("Overpass API is currently overloaded. Please try again in a few moments.");
+    }
+    
     throw error;
   }
 }

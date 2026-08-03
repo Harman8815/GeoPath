@@ -1,17 +1,18 @@
 import { PathfindingAlgorithm } from './PathfindingAlgorithm';
+import { Graph } from '../Graph';
 import type { AnimationStep, AlgorithmType } from '../../types';
 
 export class AStar extends PathfindingAlgorithm {
   private openSet: Map<number, number>;
   private openList: number[];
 
-  constructor(graph: import('../Graph').Graph) {
+  constructor(graph: Graph) {
     super(graph);
     this.openSet = new Map();
     this.openList = [];
   }
 
-   start(startNodeId: number, endNodeId: number): void {
+  start(startNodeId: number, endNodeId: number): void {
     this.reset();
     this.startNodeId = startNodeId;
     this.endNodeId = endNodeId;
@@ -41,7 +42,7 @@ export class AStar extends PathfindingAlgorithm {
     this.openList.splice(this.openList.indexOf(currentNodeId), 1);
     this.openSet.delete(currentNodeId);
 
-     if (currentNodeId === this.endNodeId) {
+    if (currentNodeId === this.endNodeId) {
       this.finished = true;
       console.log("[GeoPath] AStar finished, reached endNode:", currentNodeId);
       this.updateNode(currentNodeId, this.getNode(currentNodeId)?.parent || null, 

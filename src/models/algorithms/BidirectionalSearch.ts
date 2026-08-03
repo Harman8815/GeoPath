@@ -1,4 +1,5 @@
 import { PathfindingAlgorithm } from './PathfindingAlgorithm';
+import { Graph } from '../Graph';
 import type { AnimationStep, AlgorithmType } from '../../types';
 
 export class BidirectionalSearch extends PathfindingAlgorithm {
@@ -10,7 +11,7 @@ export class BidirectionalSearch extends PathfindingAlgorithm {
   private distanceMapEnd: Map<number, number>;
   private meetingNode: number | null;
 
-  constructor(graph: import('../Graph').Graph) {
+  constructor(graph: Graph) {
     super(graph);
     this.openSetStart = new Set();
     this.openSetEnd = new Set();

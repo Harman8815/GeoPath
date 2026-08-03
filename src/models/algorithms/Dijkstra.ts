@@ -1,11 +1,12 @@
 import { PathfindingAlgorithm } from './PathfindingAlgorithm';
+import { Graph } from '../Graph';
 import type { AnimationStep, AlgorithmType } from '../../types';
 
 export class Dijkstra extends PathfindingAlgorithm {
   private distanceMap: Map<number, number>;
   private priorityQueue: number[];
 
-  constructor(graph: import('../Graph').Graph) {
+  constructor(graph: Graph) {
     super(graph);
     this.distanceMap = new Map();
     this.priorityQueue = [];

@@ -1,11 +1,12 @@
 import { PathfindingAlgorithm } from './PathfindingAlgorithm';
+import { Graph } from '../Graph';
 import type { AnimationStep, AlgorithmType } from '../../types';
 
 export class Greedy extends PathfindingAlgorithm {
   private heuristicMap: Map<number, number>;
   private openList: number[];
 
-  constructor(graph: import('../Graph').Graph) {
+  constructor(graph: Graph) {
     super(graph);
     this.heuristicMap = new Map();
     this.openList = [];

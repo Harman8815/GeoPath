@@ -40,6 +40,8 @@ export class Greedy extends PathfindingAlgorithm {
     const currentNodeId = this.getLowestHeuristicNode();
     this.openList.splice(this.openList.indexOf(currentNodeId), 1);
 
+    console.log("[GeoPath] Greedy step: processing node", currentNodeId, "openList size:", this.openList.length, "visited size:", this.visited.size);
+
     if (currentNodeId === this.endNodeId) {
       this.finished = true;
       console.log("[GeoPath] Greedy finished, reached endNode:", currentNodeId);
@@ -54,6 +56,7 @@ export class Greedy extends PathfindingAlgorithm {
     
     if (currentNode) {
       const neighbors = currentNode.getNeighbors();
+      console.log("[GeoPath] Greedy exploring neighbors of node", currentNodeId, "neighbors:", neighbors.length);
       
       for (const neighbor of neighbors) {
         if (this.visited.has(neighbor.nodeId)) continue;
@@ -70,6 +73,7 @@ export class Greedy extends PathfindingAlgorithm {
           this.openList.push(neighbor.nodeId);
         }
         
+        console.log("[GeoPath] Greedy adding neighbor", neighbor.nodeId, "to openList, heuristic:", neighborNode.distanceToEnd);
         this.updateNode(neighbor.nodeId, currentNodeId, neighborNode.distanceFromStart, neighborNode.distanceToEnd);
       }
     }
@@ -78,6 +82,7 @@ export class Greedy extends PathfindingAlgorithm {
       currentNode?.distanceFromStart || 0,
       currentNode?.distanceToEnd || 0);
 
+    console.log("[GeoPath] Greedy step complete, updated nodes:", this.updatedNodes.length, "openList size:", this.openList.length);
     return this.updatedNodes;
   }
 

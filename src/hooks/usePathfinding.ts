@@ -12,37 +12,7 @@ export function usePathfinding() {
   const stateRef = useRef(PathfindingState.getInstance());
   const requestRef = useRef<number | null>(null);
   const timerRef = useRef(0);
-
-  const startPathfinding = useCallback((algorithm: AlgorithmType) => {
-    try {
-      stateRef.current.start(algorithm);
-      setIsRunning(true);
-      setIsFinished(false);
-      setAnimationSteps([]);
-      setWaypoints([]);
-      timerRef.current = 0;
-    } catch (error) {
-      console.error('[GeoPath] Failed to start pathfinding:', error);
-      setIsRunning(false);
-    }
-  }, []);
-
-  const stopPathfinding = useCallback(() => {
-    setIsRunning(false);
-    if (requestRef.current) {
-      cancelAnimationFrame(requestRef.current);
-      requestRef.current = null;
-    }
-  }, []);
-
-  const resetPathfinding = useCallback(() => {
-    stopPathfinding();
-    stateRef.current.reset();
-    setIsFinished(false);
-    setAnimationSteps([]);
-    setWaypoints([]);
-    timerRef.current = 0;
-  }, [stopPathfinding]);
+  const isRunningRef = useRef(false);
 
   const processAnimationStep = useCallback((step: AnimationStep) => {
     const node = stateRef.current.getNode(step.nodeId);
@@ -72,21 +42,64 @@ export function usePathfinding() {
   const animate = useCallback(() => {
     const updatedSteps = stateRef.current.nextStep();
     
+    console.log("[GeoPath] Animation frame: steps:", updatedSteps.length, "isRunning:", isRunningRef.current, "isFinished:", stateRef.current.isFinished());
+    
     if (updatedSteps.length > 0) {
       setAnimationSteps(prev => [...prev, ...updatedSteps]);
       updatedSteps.forEach(processAnimationStep);
     }
 
     if (stateRef.current.isFinished()) {
+      console.log("[GeoPath] Animation finished");
       setIsFinished(true);
       setIsRunning(false);
+      isRunningRef.current = false;
       return;
     }
 
-    if (isRunning) {
+    if (isRunningRef.current) {
       requestRef.current = requestAnimationFrame(animate);
     }
-  }, [isRunning, processAnimationStep]);
+  }, [processAnimationStep]);
+
+  const startPathfinding = useCallback((algorithm: AlgorithmType) => {
+    try {
+      console.log("[GeoPath] Starting pathfinding with algorithm:", algorithm);
+      stateRef.current.start(algorithm);
+      setIsRunning(true);
+      isRunningRef.current = true;
+      setIsFinished(false);
+      setAnimationSteps([]);
+      setWaypoints([]);
+      timerRef.current = 0;
+      
+      // Start animation loop
+      requestRef.current = requestAnimationFrame(animate);
+      console.log("[GeoPath] Animation loop started");
+    } catch (error) {
+      console.error('[GeoPath] Failed to start pathfinding:', error);
+      setIsRunning(false);
+      isRunningRef.current = false;
+    }
+  }, [animate]);
+
+  const stopPathfinding = useCallback(() => {
+    setIsRunning(false);
+    isRunningRef.current = false;
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+  }, []);
+
+  const resetPathfinding = useCallback(() => {
+    stopPathfinding();
+    stateRef.current.reset();
+    setIsFinished(false);
+    setAnimationSteps([]);
+    setWaypoints([]);
+    timerRef.current = 0;
+  }, [stopPathfinding]);
 
   const setGraph = useCallback((graph: Graph) => {
     stateRef.current.setGraph(graph);

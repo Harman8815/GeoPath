@@ -42,6 +42,8 @@ export class AStar extends PathfindingAlgorithm {
     this.openList.splice(this.openList.indexOf(currentNodeId), 1);
     this.openSet.delete(currentNodeId);
 
+    console.log("[GeoPath] AStar step: processing node", currentNodeId, "openList size:", this.openList.length, "visited size:", this.visited.size);
+
     if (currentNodeId === this.endNodeId) {
       this.finished = true;
       console.log("[GeoPath] AStar finished, reached endNode:", currentNodeId);
@@ -56,6 +58,7 @@ export class AStar extends PathfindingAlgorithm {
     
     if (currentNode) {
       const neighbors = currentNode.getNeighbors();
+      console.log("[GeoPath] AStar exploring neighbors of node", currentNodeId, "neighbors:", neighbors.length);
       
       for (const neighbor of neighbors) {
         if (this.visited.has(neighbor.nodeId)) continue;
@@ -75,6 +78,7 @@ export class AStar extends PathfindingAlgorithm {
             this.openList.push(neighbor.nodeId);
           }
           
+          console.log("[GeoPath] AStar updating neighbor", neighbor.nodeId, "parent:", currentNodeId, "gScore:", tentativeGScore);
           this.updateNode(neighbor.nodeId, currentNodeId, tentativeGScore, neighborNode.distanceToEnd);
         }
       }
@@ -84,6 +88,7 @@ export class AStar extends PathfindingAlgorithm {
       currentNode?.distanceFromStart || 0, 
       currentNode?.distanceToEnd || 0);
 
+    console.log("[GeoPath] AStar step complete, updated nodes:", this.updatedNodes.length);
     return this.updatedNodes;
   }
 

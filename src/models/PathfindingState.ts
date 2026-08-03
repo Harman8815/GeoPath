@@ -1,74 +1,119 @@
-import AStar from "./algorithms/AStar";
-import BidirectionalSearch from "./algorithms/BidirectionalSearch";
-import Dijkstra from "./algorithms/Dijkstra";
-import Greedy from "./algorithms/Greedy";
-import PathfindingAlgorithm from "./algorithms/PathfindingAlgorithm";
+import { Graph } from './Graph';
+import { PathfindingAlgorithm } from './algorithms/PathfindingAlgorithm';
+import { AStar } from './algorithms/AStar';
+import { Dijkstra } from './algorithms/Dijkstra';
+import { Greedy } from './algorithms/Greedy';
+import { BidirectionalSearch } from './algorithms/BidirectionalSearch';
+import type { AlgorithmType, AnimationStep } from '../types';
 
-export default class PathfindingState {
-  static #instance: PathfindingState;
+export class PathfindingState {
+  private static instance: PathfindingState | null = null;
+  
+  private graph: Graph | null = null;
+  private endNodeId: number | null = null;
+  private algorithm: PathfindingAlgorithm | null = null;
+  private finished: boolean = false;
 
-  endNode: any;
-  graph: any;
-  finished!: boolean;
-  algorithm: any;
+  private constructor() {}
 
-  constructor() {
-    if (!PathfindingState.#instance) {
-      this.endNode = null;
-      this.graph = null;
-      this.finished = false;
-      this.algorithm = new PathfindingAlgorithm();
-      PathfindingState.#instance = this;
+  static getInstance(): PathfindingState {
+    if (!PathfindingState.instance) {
+      PathfindingState.instance = new PathfindingState();
     }
-
-    return PathfindingState.#instance;
+    return PathfindingState.instance;
   }
 
-  get startNode() {
-    return this.graph.startNode;
+  setGraph(graph: Graph): void {
+    this.graph = graph;
   }
 
-  getNode(id: number) {
-    return this.graph?.getNode(id);
+  setEndNodeId(nodeId: number): void {
+    this.endNodeId = nodeId;
   }
 
-  reset() {
+  getGraph(): Graph | null {
+    return this.graph;
+  }
+
+  getStartNodeId(): number | null {
+    return this.graph?.startNodeId || null;
+  }
+
+  getEndNodeId(): number | null {
+    return this.endNodeId;
+  }
+
+  getNode(nodeId: number) {
+    return this.graph?.getNode(nodeId);
+  }
+
+  reset(): void {
     this.finished = false;
-    if (!this.graph) return;
-    for (const key of this.graph.nodes.keys()) {
-      this.graph.nodes.get(key).reset();
+    this.graph?.reset();
+    if (this.algorithm) {
+      this.algorithm.reset();
     }
   }
 
-  start(algorithm: string) {
+  start(algorithmType: AlgorithmType): void {
+    if (!this.graph) {
+      throw new Error('Graph not set');
+    }
+
+    const startNodeId = this.getStartNodeId();
+    const endNodeId = this.getEndNodeId();
+
+    if (startNodeId === null || endNodeId === null) {
+      throw new Error('Start or end node not set');
+    }
+
+    console.log("[GeoPath] PathfindingState.start:", { algorithm: algorithmType, startNodeId, endNodeId, graphNodes: this.graph?.getNodes().size });
+
     this.reset();
-    switch (algorithm) {
-      case "astar":
-        this.algorithm = new AStar();
+
+    switch (algorithmType) {
+      case 'astar':
+        this.algorithm = new AStar(this.graph);
         break;
-      case "greedy":
-        this.algorithm = new Greedy();
+      case 'greedy':
+        this.algorithm = new Greedy(this.graph);
         break;
-      case "dijkstra":
-        this.algorithm = new Dijkstra();
+      case 'dijkstra':
+        this.algorithm = new Dijkstra(this.graph);
         break;
-      case "bidirectional":
-        this.algorithm = new BidirectionalSearch();
+      case 'bidirectional':
+        this.algorithm = new BidirectionalSearch(this.graph);
         break;
       default:
-        this.algorithm = new AStar();
+        this.algorithm = new AStar(this.graph);
         break;
     }
 
-    this.algorithm.start(this.startNode, this.endNode);
+    this.algorithm.start(startNodeId, endNodeId);
   }
 
-  nextStep() {
+  nextStep(): AnimationStep[] {
+    if (!this.algorithm) {
+      return [];
+    }
+
     const updatedNodes = this.algorithm.nextStep();
-    if (this.algorithm.finished || updatedNodes.length === 0) {
+    
+    if (this.algorithm.isFinished()) {
+      console.log("[GeoPath] PathfindingState.nextStep finished, steps:", updatedNodes.length);
       this.finished = true;
     }
 
     return updatedNodes;
   }
+
+  isFinished(): boolean {
+    return this.finished;
+  }
+
+  getAlgorithmType(): AlgorithmType {
+    return this.algorithm?.getAlgorithmType() || 'astar';
+  }
 }
+
+export default PathfindingState;

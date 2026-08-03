@@ -1,6 +1,8 @@
+import type { ColorScheme, ViewState } from "./types";
+
 export const MAP_STYLE = "/map_style.json";
 
-export const INITIAL_VIEW_STATE = {
+export const INITIAL_VIEW_STATE: ViewState = {
   longitude: -0.127,
   latitude: 51.507,
   zoom: 13,
@@ -8,7 +10,7 @@ export const INITIAL_VIEW_STATE = {
   bearing: 0,
 };
 
-export const INITIAL_COLORS = {
+export const INITIAL_COLORS: ColorScheme = {
   startNodeFill: [70, 183, 128],
   startNodeBorder: [255, 255, 255],
   endNodeFill: [152, 4, 12],

@@ -1,4 +1,5 @@
 export function createGeoJSONCircle(center: [number, number], radiusInKm: number, points = 64) {
+  console.log("[GeoPath] createGeoJSONCircle:", { center, radiusInKm, points });
   const coords = {
     latitude: center[1],
     longitude: center[0],

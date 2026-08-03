@@ -1,74 +1,107 @@
-import PathfindingAlgorithm from "./PathfindingAlgorithm";
-import Node from "../Node";
+import { PathfindingAlgorithm } from './PathfindingAlgorithm';
+import type { AnimationStep, AlgorithmType } from '../../types';
 
-class AStar extends PathfindingAlgorithm {
-  openList: Node[];
-  closedList: Node[];
+export class AStar extends PathfindingAlgorithm {
+  private openSet: Map<number, number>;
+  private openList: number[];
 
-  constructor() {
-    super();
+  constructor(graph: import('../Graph').Graph) {
+    super(graph);
+    this.openSet = new Map();
     this.openList = [];
-    this.closedList = [];
   }
 
-  start(startNode: Node, endNode: Node) {
-    super.start(startNode, endNode);
-    this.openList = [this.startNode!];
-    this.closedList = [];
-    this.startNode!.distanceFromStart = 0;
-    this.startNode!.distanceToEnd = 0;
+   start(startNodeId: number, endNodeId: number): void {
+    this.reset();
+    this.startNodeId = startNodeId;
+    this.endNodeId = endNodeId;
+    
+    const startNode = this.getNode(startNodeId);
+    if (startNode) {
+      startNode.distanceFromStart = 0;
+      startNode.distanceToEnd = this.calculateHeuristic(startNodeId);
+    }
+    
+    this.openSet.set(startNodeId, startNode?.totalDistance || 0);
+    this.openList = [startNodeId];
+    this.markVisited(startNodeId);
+    console.log("[GeoPath] AStar start:", { startNodeId, endNodeId });
   }
 
-  nextStep() {
+  nextStep(): AnimationStep[] {
+    this.updatedNodes = [];
+
     if (this.openList.length === 0) {
       this.finished = true;
+      console.log("[GeoPath] AStar finished, openList empty");
       return [];
     }
 
-    const updatedNodes: Node[] = [];
-    const currentNode = this.openList.reduce((acc, current) => current.totalDistance < acc.totalDistance ? current : acc, this.openList[0]);
-    this.openList.splice(this.openList.indexOf(currentNode), 1);
-    currentNode.visited = true;
-    const refEdge = currentNode.edges.find((e) => e.getOtherNode(currentNode) === currentNode.referer);
-    if (refEdge) refEdge.visited = true;
+    const currentNodeId = this.getLowestFScoreNode();
+    this.openList.splice(this.openList.indexOf(currentNodeId), 1);
+    this.openSet.delete(currentNodeId);
 
-    if (currentNode.id === this.endNode!.id) {
-      this.openList = [];
+     if (currentNodeId === this.endNodeId) {
       this.finished = true;
-      return [currentNode];
+      console.log("[GeoPath] AStar finished, reached endNode:", currentNodeId);
+      this.updateNode(currentNodeId, this.getNode(currentNodeId)?.parent || null, 
+        this.getNode(currentNodeId)?.distanceFromStart || 0, 
+        this.getNode(currentNodeId)?.distanceToEnd || 0);
+      return this.updatedNodes;
     }
 
-    for (const n of currentNode.neighbors) {
-      const neighbor = n.node;
-      const edge = n.edge;
-      const neighborCurrentCost = currentNode.distanceFromStart + Math.hypot(neighbor.longitude - currentNode.longitude, neighbor.latitude - currentNode.latitude);
+    this.markVisited(currentNodeId);
+    const currentNode = this.getNode(currentNodeId);
+    
+    if (currentNode) {
+      const neighbors = currentNode.getNeighbors();
+      
+      for (const neighbor of neighbors) {
+        if (this.visited.has(neighbor.nodeId)) continue;
 
-      if (neighbor.visited && !edge.visited) {
-        edge.visited = true;
-        neighbor.referer = currentNode;
-        updatedNodes.push(neighbor);
+        const tentativeGScore = currentNode.distanceFromStart + neighbor.weight;
+        const neighborNode = this.getNode(neighbor.nodeId);
+        
+        if (!neighborNode) continue;
+
+        if (!this.openSet.has(neighbor.nodeId) || tentativeGScore < neighborNode.distanceFromStart) {
+          neighborNode.parent = currentNodeId;
+          neighborNode.distanceFromStart = tentativeGScore;
+          neighborNode.distanceToEnd = this.calculateHeuristic(neighbor.nodeId);
+          
+          if (!this.openSet.has(neighbor.nodeId)) {
+            this.openSet.set(neighbor.nodeId, neighborNode.totalDistance);
+            this.openList.push(neighbor.nodeId);
+          }
+          
+          this.updateNode(neighbor.nodeId, currentNodeId, tentativeGScore, neighborNode.distanceToEnd);
+        }
       }
-
-      if (this.openList.includes(neighbor)) {
-        if (neighbor.distanceFromStart <= neighborCurrentCost) continue;
-      } else if (this.closedList.includes(neighbor)) {
-        if (neighbor.distanceFromStart <= neighborCurrentCost) continue;
-        this.closedList.splice(this.closedList.indexOf(neighbor), 1);
-        this.openList.push(neighbor);
-      } else {
-        this.openList.push(neighbor);
-        neighbor.distanceToEnd = Math.hypot(neighbor.longitude - this.endNode!.longitude, neighbor.latitude - this.endNode!.latitude);
-      }
-
-      neighbor.distanceFromStart = neighborCurrentCost;
-      neighbor.referer = currentNode;
-      neighbor.parent = currentNode;
     }
 
-    this.closedList.push(currentNode);
+    this.updateNode(currentNodeId, currentNode?.parent || null, 
+      currentNode?.distanceFromStart || 0, 
+      currentNode?.distanceToEnd || 0);
 
-    return [...updatedNodes, currentNode];
+    return this.updatedNodes;
+  }
+
+  getAlgorithmType(): AlgorithmType {
+    return 'astar';
+  }
+
+  private getLowestFScoreNode(): number {
+    let lowestNodeId = this.openList[0];
+    let lowestFScore = this.openSet.get(lowestNodeId) || Infinity;
+
+    for (const nodeId of this.openList) {
+      const fScore = this.openSet.get(nodeId) || Infinity;
+      if (fScore < lowestFScore) {
+        lowestFScore = fScore;
+        lowestNodeId = nodeId;
+      }
+    }
+
+    return lowestNodeId;
   }
 }
-
-export default AStar;

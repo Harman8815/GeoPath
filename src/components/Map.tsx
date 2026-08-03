@@ -214,9 +214,14 @@ export default function Map() {
             widthMaxPixels={5}
             fadeTrail={false}
             currentTime={timer}
+            trailLength={1000}
+            jointRounded={true}
+            capRounded={true}
             getColor={(d: any) => colors[d.color as keyof typeof colors]}
             updateTriggers={{
               getColor: [colors.path, colors.route],
+              data: waypoints,
+              currentTime: timer,
             }}
           />
           <ScatterplotLayer

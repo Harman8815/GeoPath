@@ -8,7 +8,7 @@ import { PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { FlyToInterpolator } from "deck.gl";
 import { TripsLayer } from "@deck.gl/geo-layers";
 import { createGeoJSONCircle } from "../helpers";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getBoundingBoxFromPolygon, getMapGraph, getNearestNode } from "../services/MapService";
 import { Graph } from "../models/Graph";
 import Interface from "./Interface";
@@ -27,6 +27,9 @@ export default function Map() {
   const [fadeRadius, setFadeRadius] = useState(false);
   const [fadeRadiusReverse, setFadeRadiusReverse] = useState(false);
   const [placeEnd, setPlaceEnd] = useState(false);
+  const [currentGraph, setCurrentGraph] = useState<Graph | null>(null);
+
+  const interfaceRef = useRef<any>(null);
 
   const {
     isRunning,
@@ -48,24 +51,31 @@ export default function Map() {
 
     if (info.rightButton || placeEnd) {
       if (e.layer?.id !== "selection-radius") {
+        interfaceRef.current?.showSnack("Please select a point inside the radius.", "info");
         return;
       }
 
-      if (loading) return;
+      if (loading) {
+        interfaceRef.current?.showSnack("Please wait for all data to load.", "info");
+        return;
+      }
 
       setLoading(true);
 
       try {
-        const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
+        // Use existing graph to find nearest node without API call
+        const node = await getNearestNode(e.coordinate[1], e.coordinate[0], currentGraph);
         if (!node) {
+          interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
           setLoading(false);
           return;
         }
 
         setEndNode(node);
         setEndNodeId(node.id);
-      } catch (error) {
+      } catch (error: any) {
         console.error("[GeoPath] Error fetching end node:", error);
+        interfaceRef.current?.showSnack(error.message || "An error occurred while fetching the end node.", "error");
       } finally {
         setLoading(false);
       }
@@ -78,6 +88,7 @@ export default function Map() {
     try {
       const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
       if (!node) {
+        interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
         setLoading(false);
         return;
       }
@@ -91,9 +102,11 @@ export default function Map() {
       const boundingBox = getBoundingBoxFromPolygon(circle);
       const graph = await getMapGraph(boundingBox, node.id);
       
+      setCurrentGraph(graph);
       setGraph(graph);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[GeoPath] Error loading map graph:", error);
+      interfaceRef.current?.showSnack(error.message || "An error occurred while loading the map graph.", "error");
     } finally {
       setLoading(false);
     }
@@ -237,6 +250,7 @@ export default function Map() {
         </DeckGL>
       </div>
       <Interface
+        ref={interfaceRef}
         canStart={!!startNode && !!endNode}
         started={isRunning}
         animationEnded={isFinished}

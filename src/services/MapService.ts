@@ -1,77 +1,131 @@
 import { fetchOverpassData } from "../api";
 import { createGeoJSONCircle } from "../helpers";
-import Graph from "../models/Graph";
+import { Graph } from "../models/Graph";
+import type { OverpassNode, OverpassWay, BoundingBox } from "../types";
 
-export async function getNearestNode(latitude: number, longitude: number) {
-  const circle = createGeoJSONCircle([longitude, latitude], 0.15);
-  const boundingBox = getBoundingBoxFromPolygon(circle);
-  const response = await fetchOverpassData(boundingBox);
-  const data = await response.json();
+export async function getNearestNode(latitude: number, longitude: number): Promise<OverpassNode | null> {
+  try {
+    const circle = createGeoJSONCircle([longitude, latitude], 0.15);
+    const boundingBox = getBoundingBoxFromPolygon(circle);
+    console.log("[GeoPath] getNearestNode called for:", { latitude, longitude, boundingBox });
+    
+    const response = await fetchOverpassData(boundingBox);
+    const data = await response.json();
+    console.log("[GeoPath] getNearestNode response elements count:", data.elements?.length);
 
-  let result: any;
-  for (const node of data.elements) {
-    if (node.type !== "node") continue;
-    if (!result) {
-      result = node;
-      continue;
+    if (!data.elements || data.elements.length === 0) {
+      return null;
     }
 
-    const newLength = Math.sqrt(Math.pow(node.lat - latitude, 2) + Math.pow(node.lon - longitude, 2));
-    const resultLength = Math.sqrt(Math.pow(result.lat - latitude, 2) + Math.pow(result.lon - longitude, 2));
+    let result: OverpassNode | null = null;
+    let minDistance = Infinity;
 
-    if (newLength < resultLength) {
-      result = node;
+    for (const element of data.elements) {
+      if (element.type !== "node") continue;
+
+      const node = element as OverpassNode;
+      const distance = calculateDistance(latitude, longitude, node.lat, node.lon);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        result = node;
+      }
     }
+
+    console.log("[GeoPath] getNearestNode result:", result);
+    return result;
+  } catch (error) {
+    console.error("[GeoPath] getNearestNode error:", error);
+    return null;
   }
-
-  return result;
 }
 
-export async function getMapGraph(boundingBox: Array<{ latitude: number; longitude: number }>, startNodeId: number) {
-  const response = await fetchOverpassData(boundingBox);
-  const data = await response.json();
-  const elements = data.elements;
+export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number): Promise<Graph> {
+  try {
+    console.log("[GeoPath] getMapGraph called with bbox:", boundingBox, "startNodeId:", startNodeId);
+    
+    const response = await fetchOverpassData(boundingBox);
+    const data = await response.json();
+    const elements = data.elements;
+    console.log("[GeoPath] getMapGraph response elements count:", elements?.length);
 
-  const graph = new Graph();
-  for (const element of elements) {
-    if (element.type === "node") {
-      const node = graph.addNode(element.id, element.lat, element.lon);
+    if (!elements) {
+      throw new Error("No elements returned from Overpass API");
+    }
 
-      if (node.id === startNodeId) {
-        graph.startNode = node;
-      }
-    } else if (element.type === "way") {
-      if (!element.nodes || element.nodes.length < 2) continue;
+    const graph = new Graph();
+    const nodeMap = new Map<number, OverpassNode>();
 
-      for (let i = 0; i < element.nodes.length - 1; i++) {
-        const node1 = graph.getNode(element.nodes[i]);
-        const node2 = graph.getNode(element.nodes[i + 1]);
+    for (const element of elements) {
+      if (element.type === "node") {
+        const node = element as OverpassNode;
+        graph.addNode(node.id, node.lat, node.lon);
+        nodeMap.set(node.id, node);
 
-        if (!node1 || !node2) {
-          continue;
+        if (node.id === startNodeId) {
+          graph.startNodeId = node.id;
         }
-
-        node1.connectTo(node2);
       }
     }
-  }
 
-  if (!graph.startNode) {
-    throw new Error("Start node was not found.");
-  }
+    for (const element of elements) {
+      if (element.type === "way") {
+        const way = element as OverpassWay;
+        if (!way.nodes || way.nodes.length < 2) continue;
 
-  return graph;
+        for (let i = 0; i < way.nodes.length - 1; i++) {
+          const node1Id = way.nodes[i];
+          const node2Id = way.nodes[i + 1];
+
+          if (nodeMap.has(node1Id) && nodeMap.has(node2Id)) {
+            graph.addEdge(node1Id, node2Id);
+          }
+        }
+      }
+    }
+
+    if (graph.startNodeId === null) {
+      const err = new Error(`Start node ${startNodeId} was not found in the graph`);
+      console.error("[GeoPath] getMapGraph error:", err.message, { startNodeId, totalNodes: graph.getNodes().size });
+      throw err;
+    }
+
+    const totalEdges = graph.getEdges().size;
+    console.log("[GeoPath] getMapGraph success, nodes:", graph.getNodes().size, "edges:", totalEdges);
+    return graph;
+  } catch (error) {
+    console.error("[GeoPath] getMapGraph error:", error);
+    throw error;
+  }
 }
 
-export function getBoundingBoxFromPolygon(polygon: number[][]) {
-  const boundingBox = { minLat: Number.MAX_VALUE, maxLat: -Number.MAX_VALUE, minLon: Number.MAX_VALUE, maxLon: -Number.MAX_VALUE };
+export function getBoundingBoxFromPolygon(polygon: number[][]): BoundingBox {
+  const boundingBox: BoundingBox = {
+    minLat: Number.MAX_VALUE,
+    maxLat: -Number.MAX_VALUE,
+    minLon: Number.MAX_VALUE,
+    maxLon: -Number.MAX_VALUE,
+  };
+
   for (const coordinate of polygon) {
-    if (coordinate[0] < boundingBox.minLon) boundingBox.minLon = coordinate[0];
-    if (coordinate[0] > boundingBox.maxLon) boundingBox.maxLon = coordinate[0];
-    if (coordinate[1] < boundingBox.minLat) boundingBox.minLat = coordinate[1];
-    if (coordinate[1] > boundingBox.maxLat) boundingBox.maxLat = coordinate[1];
+    const [longitude, latitude] = coordinate;
+    if (longitude < boundingBox.minLon) boundingBox.minLon = longitude;
+    if (longitude > boundingBox.maxLon) boundingBox.maxLon = longitude;
+    if (latitude < boundingBox.minLat) boundingBox.minLat = latitude;
+    if (latitude > boundingBox.maxLat) boundingBox.maxLat = latitude;
   }
 
-  const formatted = [{ latitude: boundingBox.minLat, longitude: boundingBox.minLon }, { latitude: boundingBox.maxLat, longitude: boundingBox.maxLon }];
-  return formatted;
+  return boundingBox;
+}
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }

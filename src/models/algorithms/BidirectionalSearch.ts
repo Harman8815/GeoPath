@@ -50,6 +50,13 @@ export class BidirectionalSearch extends PathfindingAlgorithm {
       return [];
     }
 
+    // Early termination: if we've explored too many nodes without finding the end
+    if (this.visited.size > 1000) {
+      console.log("[GeoPath] BidirectionalSearch early termination: explored too many nodes");
+      this.finished = true;
+      return [];
+    }
+
     const currentStartId = this.getNextFromOpenSet(this.openSetStart, this.closedSetStart, this.distanceMapStart);
     if (currentStartId !== null) {
       this.closedSetStart.add(currentStartId);

@@ -48,6 +48,13 @@ export class Dijkstra extends PathfindingAlgorithm {
       return this.updatedNodes;
     }
 
+    // Early termination: if we've explored too many nodes without finding the end
+    if (this.visited.size > 1000) {
+      console.log("[GeoPath] Dijkstra early termination: explored too many nodes");
+      this.finished = true;
+      return [];
+    }
+
     this.markVisited(currentNodeId);
     const currentNode = this.getNode(currentNodeId);
     

@@ -57,21 +57,110 @@ function getCachedArea(requestedBBox: BoundingBox): CachedArea | null {
   return null;
 }
 
+function mergeBoundingBoxes(bbox1: BoundingBox, bbox2: BoundingBox): BoundingBox {
+  return {
+    minLat: Math.min(bbox1.minLat, bbox2.minLat),
+    maxLat: Math.max(bbox1.maxLat, bbox2.maxLat),
+    minLon: Math.min(bbox1.minLon, bbox2.minLon),
+    maxLon: Math.max(bbox1.maxLon, bbox2.maxLon),
+  };
+}
+
+function mergeGraphs(graph1: Graph, graph2: Graph): Graph {
+  const mergedGraph = new Graph();
+  
+  // Copy nodes from graph1
+  const nodes1 = graph1.getNodes();
+  for (const [id, node] of nodes1) {
+    mergedGraph.addNode(id, node.latitude, node.longitude);
+  }
+  
+  // Copy nodes from graph2
+  const nodes2 = graph2.getNodes();
+  for (const [id, node] of nodes2) {
+    if (!mergedGraph.getNodes().has(id)) {
+      mergedGraph.addNode(id, node.latitude, node.longitude);
+    }
+  }
+  
+  // Copy edges from graph1
+  const edges1 = graph1.getEdges();
+  for (const [edgeId, edge] of edges1) {
+    mergedGraph.addEdge(edge.node1Id, edge.node2Id);
+  }
+  
+  // Copy edges from graph2
+  const edges2 = graph2.getEdges();
+  for (const [edgeId, edge] of edges2) {
+    mergedGraph.addEdge(edge.node1Id, edge.node2Id);
+  }
+  
+  // Preserve start node if available
+  if (graph1.startNodeId !== null) {
+    mergedGraph.startNodeId = graph1.startNodeId;
+  } else if (graph2.startNodeId !== null) {
+    mergedGraph.startNodeId = graph2.startNodeId;
+  }
+  
+  console.log("[GeoPath] Merged graphs:", {
+    nodes1: nodes1.size,
+    nodes2: nodes2.size,
+    mergedNodes: mergedGraph.getNodes().size,
+    edges1: edges1.size,
+    edges2: edges2.size,
+    mergedEdges: mergedGraph.getEdges().size,
+  });
+  
+  return mergedGraph;
+}
+
 function setCachedArea(boundingBox: BoundingBox, graph: Graph): void {
-  const key = getCacheKey(boundingBox);
-  areaCache.set(key, {
-    boundingBox,
-    graph,
+  // Check if this new area overlaps with any existing cached areas
+  const overlappingKeys: string[] = [];
+  let mergedGraph = graph;
+  let mergedBBox = boundingBox;
+  
+  for (const [key, cached] of areaCache) {
+    if (Date.now() - cached.timestamp > CACHE_DURATION) {
+      continue;
+    }
+    
+    // Check for overlap
+    const overlap = !(
+      boundingBox.maxLat < cached.boundingBox.minLat ||
+      boundingBox.minLat > cached.boundingBox.maxLat ||
+      boundingBox.maxLon < cached.boundingBox.minLon ||
+      boundingBox.minLon > cached.boundingBox.maxLon
+    );
+    
+    if (overlap) {
+      console.log("[GeoPath] Found overlapping cached area, merging:", cached.boundingBox);
+      overlappingKeys.push(key);
+      mergedGraph = mergeGraphs(mergedGraph, cached.graph);
+      mergedBBox = mergeBoundingBoxes(mergedBBox, cached.boundingBox);
+    }
+  }
+  
+  // Remove overlapping entries
+  for (const key of overlappingKeys) {
+    areaCache.delete(key);
+  }
+  
+  // Set the merged area
+  const newKey = getCacheKey(mergedBBox);
+  areaCache.set(newKey, {
+    boundingBox: mergedBBox,
+    graph: mergedGraph,
     timestamp: Date.now(),
   });
 
-  // Clean up old entries
+  // Clean up old entries if cache is too large
   if (areaCache.size > 5) {
     const oldestKey = Array.from(areaCache.keys())[0];
     areaCache.delete(oldestKey);
   }
 
-  console.log("[GeoPath] Cached area data for bbox:", boundingBox);
+  console.log("[GeoPath] Cached merged area data for bbox:", mergedBBox);
 }
 
 export function getCurrentCachedAreas(): BoundingBox[] {

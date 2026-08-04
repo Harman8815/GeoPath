@@ -16,8 +16,8 @@ export const INITIAL_COLORS: ColorScheme = {
   endNodeFill: [152, 4, 12],
   endNodeBorder: [0, 0, 0],
   path: [70, 183, 128],
-  route: [165, 13, 32],
-  explored: [255, 50, 50],
+  route: [70, 183, 128],
+  explored: [70, 183, 128],
   finalPath: [50, 200, 50],
 };
 

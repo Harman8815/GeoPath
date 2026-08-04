@@ -47,10 +47,17 @@ export class AStar extends PathfindingAlgorithm {
     if (currentNodeId === this.endNodeId) {
       this.finished = true;
       console.log("[GeoPath] AStar finished, reached endNode:", currentNodeId);
-      this.updateNode(currentNodeId, this.getNode(currentNodeId)?.parent || null, 
-        this.getNode(currentNodeId)?.distanceFromStart || 0, 
+      this.updateNode(currentNodeId, this.getNode(currentNodeId)?.parent || null,
+        this.getNode(currentNodeId)?.distanceFromStart || 0,
         this.getNode(currentNodeId)?.distanceToEnd || 0);
       return this.updatedNodes;
+    }
+
+    // Early termination: if we've explored too many nodes without finding the end
+    if (this.visited.size > 1000) {
+      console.log("[GeoPath] AStar early termination: explored too many nodes");
+      this.finished = true;
+      return [];
     }
 
     this.markVisited(currentNodeId);

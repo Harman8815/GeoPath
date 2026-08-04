@@ -49,6 +49,14 @@ export default function Map() {
     timer,
   } = usePathfinding();
 
+  // Calculate maxTime from all animation data
+  const maxTime = Math.max(
+    0,
+    ...waypoints.map(w => w.timestamps[1]),
+    ...exploredEdges.map(e => e.timestamps[1]),
+    ...finalPath.map(f => f.timestamps[1])
+  );
+
   const handleMapClick = async (e: any, info: any, radius: number | null = null) => {
     if (isRunning) return;
 

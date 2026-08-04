@@ -31,6 +31,8 @@ export default function Map() {
   const [placeEnd, setPlaceEnd] = useState(false);
   const [currentGraph, setCurrentGraph] = useState<Graph | null>(null);
   const [cachedAreas, setCachedAreas] = useState<{ contour: number[][] }[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [pulseOpacity, setPulseOpacity] = useState(1);
 
   const interfaceRef = useRef<any>(null);
 
@@ -126,6 +128,7 @@ export default function Map() {
         [expandedBBox.minLon, expandedBBox.minLat],
       ];
       setFetchingArea({ contour: fetchingContour });
+      setIsFetching(true);
 
       const graph = await getMapGraph(boundingBox, node.id);
       
@@ -133,6 +136,7 @@ export default function Map() {
       setGraph(graph);
       setApiStatus('success');
       setFetchingArea(null);
+      setIsFetching(false);
       
       // Update cached areas visualization
       updateCachedAreasVisualization();
@@ -141,6 +145,7 @@ export default function Map() {
       interfaceRef.current?.showSnack(error.message || "An error occurred while loading the map graph.", "error");
       setApiStatus('error');
       setFetchingArea(null);
+      setIsFetching(false);
     } finally {
       setLoading(false);
     }
@@ -220,6 +225,20 @@ export default function Map() {
       return () => clearTimeout(timer);
     }
   }, [apiStatus]);
+
+  // Pulsing animation for fetching area
+  useEffect(() => {
+    if (!isFetching) {
+      setPulseOpacity(1);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setPulseOpacity(prev => prev === 1 ? 0.5 : 1);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isFetching]);
 
   useEffect(() => {
     console.log("[GeoPath] Map component mounted");
@@ -321,6 +340,10 @@ export default function Map() {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
           }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
         `}</style>
         <DeckGL
           initialViewState={viewState}
@@ -346,8 +369,8 @@ export default function Map() {
             pickable={false}
             stroked={true}
             getPolygon={(d: any) => d.contour}
-            getFillColor={[0, 100, 255, 20]}
-            getLineColor={[0, 100, 255, 150]}
+            getFillColor={[0, 100, 255, 25]}
+            getLineColor={[0, 100, 255, 100]}
             getLineWidth={2}
             opacity={1}
           />
@@ -358,10 +381,10 @@ export default function Map() {
               pickable={false}
               stroked={true}
               getPolygon={(d: any) => d.contour}
-              getFillColor={[255, 165, 0, 30]}
-              getLineColor={[255, 165, 0, 200]}
-              getLineWidth={3}
-              opacity={1}
+              getFillColor={[255, 165, 0, isFetching ? 40 : 20]}
+              getLineColor={[255, 165, 0, isFetching ? 255 : 150]}
+              getLineWidth={isFetching ? 4 : 2}
+              opacity={isFetching ? pulseOpacity : 1}
             />
           )}
           <TripsLayer

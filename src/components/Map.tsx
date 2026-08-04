@@ -393,14 +393,14 @@ export default function Map() {
             id={"explored-edges-layer"}
             data={exploredEdges}
             opacity={1}
-            widthMinPixels={2}
-            widthMaxPixels={3}
+            widthMinPixels={3}
+            widthMaxPixels={4}
             fadeTrail={false}
             currentTime={exploredEdges.length > 0 ? exploredEdges[exploredEdges.length - 1].timestamps[1] : 0}
-            trailLength={100000}
+            trailLength={1000000}
             jointRounded={true}
             capRounded={true}
-            getColor={(d: any) => colors[d.color as keyof typeof colors]}
+            getColor={(d: any) => colors.explored}
             updateTriggers={{
               getColor: [colors.explored],
               data: exploredEdges,
@@ -410,14 +410,14 @@ export default function Map() {
             id={"final-path-layer"}
             data={finalPath}
             opacity={1}
-            widthMinPixels={4}
-            widthMaxPixels={6}
+            widthMinPixels={5}
+            widthMaxPixels={7}
             fadeTrail={false}
             currentTime={finalPath.length > 0 ? finalPath[finalPath.length - 1].timestamps[1] : 0}
-            trailLength={100000}
+            trailLength={1000000}
             jointRounded={true}
             capRounded={true}
-            getColor={(d: any) => colors[d.color as keyof typeof colors]}
+            getColor={(d: any) => colors.finalPath}
             updateTriggers={{
               getColor: [colors.finalPath],
               data: finalPath,

@@ -12,10 +12,11 @@ export function usePathfinding() {
   const [finalPath, setFinalPath] = useState<WaypointData[]>([]);
   
   const stateRef = useRef(PathfindingState.getInstance());
-  const requestRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const timerRef = useRef(0);
   const exploredTimerRef = useRef(0);
   const isRunningRef = useRef(false);
+  const animationDelay = 50; // ms between steps
 
   const processAnimationStep = useCallback((step: AnimationStep) => {
     const node = stateRef.current.getNode(step.nodeId);
@@ -55,15 +56,26 @@ export function usePathfinding() {
       color: 'explored',
     };
 
+    console.log("[GeoPath] Adding explored edge:", {
+      from: step.parent,
+      to: step.nodeId,
+      totalExplored: exploredEdges.length + 1
+    });
+
     setExploredEdges(prev => [...prev, exploredWaypoint]);
     exploredTimerRef.current += 100;
-  }, []);
+  }, [exploredEdges]);
 
   const animateFinalPath = useCallback(() => {
     const endNodeId = stateRef.current.getEndNodeId();
     const startNodeId = stateRef.current.getStartNodeId();
     
-    if (!endNodeId || !startNodeId) return;
+    console.log("[GeoPath] Reconstructing final path:", { startNodeId, endNodeId });
+    
+    if (!endNodeId || !startNodeId) {
+      console.log("[GeoPath] Cannot reconstruct path - missing start or end node");
+      return;
+    }
 
     // Reconstruct the final path by following parent pointers
     const path: number[] = [];
@@ -79,6 +91,8 @@ export function usePathfinding() {
     if (currentNodeId === startNodeId) {
       path.unshift(startNodeId);
     }
+
+    console.log("[GeoPath] Final path reconstructed with", path.length, "nodes");
 
     // Create waypoints for the final path
     const finalPathWaypoints: WaypointData[] = [];
@@ -105,13 +119,19 @@ export function usePathfinding() {
       }
     }
     
+    console.log("[GeoPath] Final path waypoints created:", finalPathWaypoints.length);
     setFinalPath(finalPathWaypoints);
   }, []);
 
   const animate = useCallback(() => {
     const updatedSteps = stateRef.current.nextStep();
     
-    console.log("[GeoPath] Animation frame: steps:", updatedSteps.length, "isRunning:", isRunningRef.current, "isFinished:", stateRef.current.isFinished());
+    console.log("[GeoPath] Animation step:", {
+      stepsProcessed: updatedSteps.length,
+      isRunning: isRunningRef.current,
+      isFinished: stateRef.current.isFinished(),
+      totalExploredEdges: exploredEdges.length
+    });
     
     if (updatedSteps.length > 0) {
       setAnimationSteps(prev => [...prev, ...updatedSteps]);
@@ -120,7 +140,7 @@ export function usePathfinding() {
     }
 
     if (stateRef.current.isFinished()) {
-      console.log("[GeoPath] Animation finished");
+      console.log("[GeoPath] Animation finished - reconstructing final path");
       setIsFinished(true);
       setIsRunning(false);
       isRunningRef.current = false;
@@ -129,13 +149,13 @@ export function usePathfinding() {
     }
 
     if (isRunningRef.current) {
-      requestRef.current = requestAnimationFrame(animate);
+      timeoutRef.current = window.setTimeout(animate, animationDelay);
     }
-  }, [processAnimationStep, processExploredEdge, animateFinalPath]);
+  }, [processAnimationStep, processExploredEdge, animateFinalPath, exploredEdges, animationDelay]);
 
   const startPathfinding = useCallback((algorithm: AlgorithmType) => {
     try {
-      console.log("[GeoPath] Starting pathfinding with algorithm:", algorithm);
+      console.log("[GeoPath] Starting pathfinding animation with algorithm:", algorithm);
       stateRef.current.start(algorithm);
       setIsRunning(true);
       isRunningRef.current = true;
@@ -147,22 +167,22 @@ export function usePathfinding() {
       timerRef.current = 0;
       exploredTimerRef.current = 0;
       
-      // Start animation loop
-      requestRef.current = requestAnimationFrame(animate);
-      console.log("[GeoPath] Animation loop started");
+      // Start animation loop with delay
+      console.log("[GeoPath] Animation loop started with delay:", animationDelay, "ms");
+      timeoutRef.current = window.setTimeout(animate, animationDelay);
     } catch (error) {
       console.error('[GeoPath] Failed to start pathfinding:', error);
       setIsRunning(false);
       isRunningRef.current = false;
     }
-  }, [animate]);
+  }, [animate, animationDelay]);
 
   const stopPathfinding = useCallback(() => {
     setIsRunning(false);
     isRunningRef.current = false;
-    if (requestRef.current) {
-      cancelAnimationFrame(requestRef.current);
-      requestRef.current = null;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
   }, []);
 

@@ -67,8 +67,6 @@ export class PathfindingState {
       throw new Error('Start or end node not set');
     }
 
-    console.log("[GeoPath] PathfindingState.start:", { algorithm: algorithmType, startNodeId, endNodeId, graphNodes: this.graph?.getNodes().size });
-
     this.reset();
 
     switch (algorithmType) {
@@ -100,7 +98,6 @@ export class PathfindingState {
     const updatedNodes = this.algorithm.nextStep();
     
     if (this.algorithm.isFinished()) {
-      console.log("[GeoPath] PathfindingState.nextStep finished, steps:", updatedNodes.length);
       this.finished = true;
     }
 

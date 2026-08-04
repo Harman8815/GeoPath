@@ -25,7 +25,6 @@ export class Greedy extends PathfindingAlgorithm {
     
     this.heuristicMap.set(startNodeId, startNode?.distanceToEnd || 0);
     this.openList = [startNodeId];
-    console.log("[GeoPath] Greedy start:", { startNodeId, endNodeId });
   }
 
   nextStep(): AnimationStep[] {
@@ -33,18 +32,14 @@ export class Greedy extends PathfindingAlgorithm {
 
     if (this.openList.length === 0) {
       this.finished = true;
-      console.log("[GeoPath] Greedy finished, openList empty");
       return [];
     }
 
     const currentNodeId = this.getLowestHeuristicNode();
     this.openList.splice(this.openList.indexOf(currentNodeId), 1);
 
-    console.log("[GeoPath] Greedy step: processing node", currentNodeId, "openList size:", this.openList.length, "visited size:", this.visited.size);
-
     if (currentNodeId === this.endNodeId) {
       this.finished = true;
-      console.log("[GeoPath] Greedy finished, reached endNode:", currentNodeId);
       this.updateNode(currentNodeId, this.getNode(currentNodeId)?.parent || null,
         this.getNode(currentNodeId)?.distanceFromStart || 0,
         this.getNode(currentNodeId)?.distanceToEnd || 0);
@@ -56,7 +51,6 @@ export class Greedy extends PathfindingAlgorithm {
     
     if (currentNode) {
       const neighbors = currentNode.getNeighbors();
-      console.log("[GeoPath] Greedy exploring neighbors of node", currentNodeId, "neighbors:", neighbors.length);
       
       for (const neighbor of neighbors) {
         if (this.visited.has(neighbor.nodeId)) continue;
@@ -73,7 +67,6 @@ export class Greedy extends PathfindingAlgorithm {
           this.openList.push(neighbor.nodeId);
         }
         
-        console.log("[GeoPath] Greedy adding neighbor", neighbor.nodeId, "to openList, heuristic:", neighborNode.distanceToEnd);
         this.updateNode(neighbor.nodeId, currentNodeId, neighborNode.distanceFromStart, neighborNode.distanceToEnd);
       }
     }
@@ -82,7 +75,6 @@ export class Greedy extends PathfindingAlgorithm {
       currentNode?.distanceFromStart || 0,
       currentNode?.distanceToEnd || 0);
 
-    console.log("[GeoPath] Greedy step complete, updated nodes:", this.updatedNodes.length, "openList size:", this.openList.length);
     return this.updatedNodes;
   }
 

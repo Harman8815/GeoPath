@@ -14,6 +14,9 @@ const areaCache = new Map<string, CachedArea>();
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const BUFFER_FACTOR = 1.5; // Fetch 1.5x the requested area as buffer
 
+// Request deduplication
+const pendingRequests = new Map<string, Promise<Graph>>();
+
 function getCacheKey(boundingBox: BoundingBox): string {
   return `${boundingBox.minLat.toFixed(4)}_${boundingBox.minLon.toFixed(4)}_${boundingBox.maxLat.toFixed(4)}_${boundingBox.maxLon.toFixed(4)}`;
 }
@@ -294,60 +297,80 @@ export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number)
 
     // Expand bounding box with buffer zone
     const expandedBBox = expandBoundingBox(boundingBox, BUFFER_FACTOR);
+    const requestKey = getCacheKey(expandedBBox);
+    
+    // Check if there's already a pending request for this area
+    const existingRequest = pendingRequests.get(requestKey);
+    if (existingRequest) {
+      console.log("[GeoPath] getMapGraph waiting for existing request:", requestKey);
+      return existingRequest;
+    }
+
     console.log("[GeoPath] getMapGraph called with expanded bbox:", expandedBBox, "startNodeId:", startNodeId);
     
-    const response = await fetchOverpassData(expandedBBox);
-    const data = await response.json();
-    const elements = data.elements;
-    console.log("[GeoPath] getMapGraph response elements count:", elements?.length);
+    // Create and store the new request
+    const requestPromise = (async () => {
+      try {
+        const response = await fetchOverpassData(expandedBBox);
+        const data = await response.json();
+        const elements = data.elements;
+        console.log("[GeoPath] getMapGraph response elements count:", elements?.length);
 
-    if (!elements) {
-      throw new Error("No elements returned from Overpass API");
-    }
-
-    const graph = new Graph();
-    const nodeMap = new Map<number, OverpassNode>();
-
-    for (const element of elements) {
-      if (element.type === "node") {
-        const node = element as OverpassNode;
-        graph.addNode(node.id, node.lat, node.lon);
-        nodeMap.set(node.id, node);
-
-        if (node.id === startNodeId) {
-          graph.startNodeId = node.id;
+        if (!elements) {
+          throw new Error("No elements returned from Overpass API");
         }
-      }
-    }
 
-    for (const element of elements) {
-      if (element.type === "way") {
-        const way = element as OverpassWay;
-        if (!way.nodes || way.nodes.length < 2) continue;
+        const graph = new Graph();
+        const nodeMap = new Map<number, OverpassNode>();
 
-        for (let i = 0; i < way.nodes.length - 1; i++) {
-          const node1Id = way.nodes[i];
-          const node2Id = way.nodes[i + 1];
+        for (const element of elements) {
+          if (element.type === "node") {
+            const node = element as OverpassNode;
+            graph.addNode(node.id, node.lat, node.lon);
+            nodeMap.set(node.id, node);
 
-          if (nodeMap.has(node1Id) && nodeMap.has(node2Id)) {
-            graph.addEdge(node1Id, node2Id);
+            if (node.id === startNodeId) {
+              graph.startNodeId = node.id;
+            }
           }
         }
+
+        for (const element of elements) {
+          if (element.type === "way") {
+            const way = element as OverpassWay;
+            if (!way.nodes || way.nodes.length < 2) continue;
+
+            for (let i = 0; i < way.nodes.length - 1; i++) {
+              const node1Id = way.nodes[i];
+              const node2Id = way.nodes[i + 1];
+
+              if (nodeMap.has(node1Id) && nodeMap.has(node2Id)) {
+                graph.addEdge(node1Id, node2Id);
+              }
+            }
+          }
+        }
+
+        if (graph.startNodeId === null) {
+          const err = new Error(`Start node ${startNodeId} was not found in the graph`);
+          console.error("[GeoPath] getMapGraph error:", err.message, { startNodeId, totalNodes: graph.getNodes().size });
+          throw err;
+        }
+
+        // Cache the expanded area
+        setCachedArea(expandedBBox, graph);
+
+        const totalEdges = graph.getEdges().size;
+        console.log("[GeoPath] getMapGraph success, nodes:", graph.getNodes().size, "edges:", totalEdges);
+        return graph;
+      } finally {
+        // Remove the request from pending map after completion
+        pendingRequests.delete(requestKey);
       }
-    }
+    })();
 
-    if (graph.startNodeId === null) {
-      const err = new Error(`Start node ${startNodeId} was not found in the graph`);
-      console.error("[GeoPath] getMapGraph error:", err.message, { startNodeId, totalNodes: graph.getNodes().size });
-      throw err;
-    }
-
-    // Cache the expanded area
-    setCachedArea(expandedBBox, graph);
-
-    const totalEdges = graph.getEdges().size;
-    console.log("[GeoPath] getMapGraph success, nodes:", graph.getNodes().size, "edges:", totalEdges);
-    return graph;
+    pendingRequests.set(requestKey, requestPromise);
+    return requestPromise;
   } catch (error: any) {
     console.error("[GeoPath] getMapGraph error:", error);
     

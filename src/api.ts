@@ -59,13 +59,10 @@ export function fetchOverpassData(boundingBox: BoundingBox) {
     (
       way[highway]${exclusion}[footway!="*"]
       (${boundingBox.minLat},${boundingBox.minLon},${boundingBox.maxLat},${boundingBox.maxLon});
-      node(w)->.nodes;
     );
-    (
-      .nodes;
-      way;
-    );
-    out;`;
+    out body;
+    >;
+    out skel qt;`;
   console.log("[GeoPath] Overpass query bbox:", { bbox: boundingBox, queryLength: query.length });
 
   return fetchWithRetry("https://overpass-api.de/api/interpreter", {

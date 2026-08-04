@@ -53,7 +53,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
 
 export function fetchOverpassData(boundingBox: BoundingBox) {
   const exclusion = highWayExclude.map((e) => `[highway!="${e}"]`).join("");
-  // Simplified query to reduce server load - only fetch nodes that are part of ways
+  // Fetch both ways and their nodes to construct proper graph edges
   const query = `
     [out:json][timeout:25];
     (
@@ -61,7 +61,11 @@ export function fetchOverpassData(boundingBox: BoundingBox) {
       (${boundingBox.minLat},${boundingBox.minLon},${boundingBox.maxLat},${boundingBox.maxLon});
       node(w)->.nodes;
     );
-    .nodes out skel;`;
+    (
+      .nodes;
+      way;
+    );
+    out;`;
   console.log("[GeoPath] Overpass query bbox:", { bbox: boundingBox, queryLength: query.length });
 
   return fetchWithRetry("https://overpass-api.de/api/interpreter", {

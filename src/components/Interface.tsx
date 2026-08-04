@@ -514,7 +514,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         </div>
         <div className="timeline-info">
           <Typography variant="caption" style={{ color: "#A8AFB3" }}>
-            {animationEnded ? `${Math.round(time)} / ${Math.round(maxTime)}` : 'Not ready'}
+            {animationEnded ? (maxTime > 0 ? `${Math.round(time)} / ${Math.round(maxTime)}` : 'No path found') : 'Not ready'}
           </Typography>
         </div>
       </div>

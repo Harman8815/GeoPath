@@ -281,8 +281,8 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         </div>
       </Backdrop> */}
 
-      {/* Settings drawer - commented out for UI simplification */}
-      {/* <Drawer
+      {/* Settings drawer */}
+      <Drawer
         className={`side-drawer ${cinematic ? "cinematic" : ""}`}
         anchor="left"
         open={sidebar}
@@ -474,7 +474,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
             </Button>
           </div>
         </div>
-      </Drawer> */}
+      </Drawer>
 
       {/* GitHub ribbon - removed for UI simplification */}
       {/* <a href="https://github.com/honzaap/Pathfinding" aria-label="GitHub repository" target="_blank" className={`github-corner ${cinematic ? "cinematic" : ""}`}>

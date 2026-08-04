@@ -87,6 +87,8 @@ export interface MapSettings {
 export interface ColorScheme {
   path: number[];
   route: number[];
+  explored: number[];
+  finalPath: number[];
   startNodeFill: number[];
   startNodeBorder: number[];
   endNodeFill: number[];

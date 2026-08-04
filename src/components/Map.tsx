@@ -40,6 +40,8 @@ export default function Map() {
     isRunning,
     isFinished,
     waypoints,
+    exploredEdges,
+    finalPath,
     startPathfinding,
     resetPathfinding,
     setGraph,
@@ -387,6 +389,40 @@ export default function Map() {
               opacity={isFetching ? pulseOpacity : 1}
             />
           )}
+          <TripsLayer
+            id={"explored-edges-layer"}
+            data={exploredEdges}
+            opacity={1}
+            widthMinPixels={2}
+            widthMaxPixels={3}
+            fadeTrail={false}
+            currentTime={exploredEdges.length > 0 ? exploredEdges[exploredEdges.length - 1].timestamps[1] : 0}
+            trailLength={100000}
+            jointRounded={true}
+            capRounded={true}
+            getColor={(d: any) => colors[d.color as keyof typeof colors]}
+            updateTriggers={{
+              getColor: [colors.explored],
+              data: exploredEdges,
+            }}
+          />
+          <TripsLayer
+            id={"final-path-layer"}
+            data={finalPath}
+            opacity={1}
+            widthMinPixels={4}
+            widthMaxPixels={6}
+            fadeTrail={false}
+            currentTime={finalPath.length > 0 ? finalPath[finalPath.length - 1].timestamps[1] : 0}
+            trailLength={100000}
+            jointRounded={true}
+            capRounded={true}
+            getColor={(d: any) => colors[d.color as keyof typeof colors]}
+            updateTriggers={{
+              getColor: [colors.finalPath],
+              data: finalPath,
+            }}
+          />
           <TripsLayer
             id={"pathfinding-layer"}
             data={waypoints}

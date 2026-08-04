@@ -8,10 +8,13 @@ export function usePathfinding() {
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [waypoints, setWaypoints] = useState<WaypointData[]>([]);
+  const [exploredEdges, setExploredEdges] = useState<WaypointData[]>([]);
+  const [finalPath, setFinalPath] = useState<WaypointData[]>([]);
   
   const stateRef = useRef(PathfindingState.getInstance());
   const requestRef = useRef<number | null>(null);
   const timerRef = useRef(0);
+  const exploredTimerRef = useRef(0);
   const isRunningRef = useRef(false);
 
   const processAnimationStep = useCallback((step: AnimationStep) => {
@@ -39,6 +42,72 @@ export function usePathfinding() {
     }
   }, []);
 
+  const processExploredEdge = useCallback((step: AnimationStep) => {
+    const node = stateRef.current.getNode(step.nodeId);
+    if (!node || step.parent === null) return;
+
+    const parentNode = stateRef.current.getNode(step.parent);
+    if (!parentNode) return;
+
+    const exploredWaypoint: WaypointData = {
+      path: [[parentNode.longitude, parentNode.latitude], [node.longitude, node.latitude]],
+      timestamps: [exploredTimerRef.current, exploredTimerRef.current + 100],
+      color: 'explored',
+    };
+
+    setExploredEdges(prev => [...prev, exploredWaypoint]);
+    exploredTimerRef.current += 100;
+  }, []);
+
+  const animateFinalPath = useCallback(() => {
+    const endNodeId = stateRef.current.getEndNodeId();
+    const startNodeId = stateRef.current.getStartNodeId();
+    
+    if (!endNodeId || !startNodeId) return;
+
+    // Reconstruct the final path by following parent pointers
+    const path: number[] = [];
+    let currentNodeId = endNodeId;
+    let currentNode = stateRef.current.getNode(currentNodeId);
+    
+    while (currentNodeId !== startNodeId && currentNode) {
+      path.unshift(currentNodeId);
+      currentNodeId = currentNode.parent || 0;
+      currentNode = stateRef.current.getNode(currentNodeId);
+    }
+    
+    if (currentNodeId === startNodeId) {
+      path.unshift(startNodeId);
+    }
+
+    // Create waypoints for the final path
+    const finalPathWaypoints: WaypointData[] = [];
+    let finalTimer = 0;
+    
+    for (let i = 0; i < path.length - 1; i++) {
+      const fromNode = stateRef.current.getNode(path[i]);
+      const toNode = stateRef.current.getNode(path[i + 1]);
+      
+      if (fromNode && toNode) {
+        const distance = Math.hypot(
+          toNode.longitude - fromNode.longitude,
+          toNode.latitude - fromNode.latitude
+        );
+        const timeAdd = distance * 30000;
+        
+        finalPathWaypoints.push({
+          path: [[fromNode.longitude, fromNode.latitude], [toNode.longitude, toNode.latitude]],
+          timestamps: [finalTimer, finalTimer + timeAdd],
+          color: 'finalPath',
+        });
+        
+        finalTimer += timeAdd;
+      }
+    }
+    
+    setFinalPath(finalPathWaypoints);
+  }, []);
+
   const animate = useCallback(() => {
     const updatedSteps = stateRef.current.nextStep();
     
@@ -47,6 +116,7 @@ export function usePathfinding() {
     if (updatedSteps.length > 0) {
       setAnimationSteps(prev => [...prev, ...updatedSteps]);
       updatedSteps.forEach(processAnimationStep);
+      updatedSteps.forEach(processExploredEdge);
     }
 
     if (stateRef.current.isFinished()) {
@@ -54,13 +124,14 @@ export function usePathfinding() {
       setIsFinished(true);
       setIsRunning(false);
       isRunningRef.current = false;
+      animateFinalPath();
       return;
     }
 
     if (isRunningRef.current) {
       requestRef.current = requestAnimationFrame(animate);
     }
-  }, [processAnimationStep]);
+  }, [processAnimationStep, processExploredEdge, animateFinalPath]);
 
   const startPathfinding = useCallback((algorithm: AlgorithmType) => {
     try {
@@ -71,7 +142,10 @@ export function usePathfinding() {
       setIsFinished(false);
       setAnimationSteps([]);
       setWaypoints([]);
+      setExploredEdges([]);
+      setFinalPath([]);
       timerRef.current = 0;
+      exploredTimerRef.current = 0;
       
       // Start animation loop
       requestRef.current = requestAnimationFrame(animate);
@@ -98,7 +172,10 @@ export function usePathfinding() {
     setIsFinished(false);
     setAnimationSteps([]);
     setWaypoints([]);
+    setExploredEdges([]);
+    setFinalPath([]);
     timerRef.current = 0;
+    exploredTimerRef.current = 0;
   }, [stopPathfinding]);
 
   const setGraph = useCallback((graph: Graph) => {
@@ -114,6 +191,8 @@ export function usePathfinding() {
     isRunning,
     isFinished,
     waypoints,
+    exploredEdges,
+    finalPath,
     startPathfinding,
     stopPathfinding,
     resetPathfinding,

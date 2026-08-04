@@ -137,7 +137,8 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
 
   return (
     <>
-      <div className={`nav-top ${cinematic ? "cinematic" : ""}`}>
+      {/* Top navigation - commented out for UI simplification */}
+      {/* <div className={`nav-top ${cinematic ? "cinematic" : ""}`}>
         <div className="side slider-container">
           <Typography id="playback-slider" gutterBottom>
             Animation playback
@@ -153,7 +154,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         <div className="side">
           <Button disabled={!animationEnded && started} onClick={clearPath} style={{ color: "#fff", backgroundColor: "#404156", paddingInline: 30, paddingBlock: 7 }} variant="contained">Clear path</Button>
         </div>
-      </div>
+      </div> */}
 
       <div className={`nav-right ${cinematic ? "cinematic" : ""}`}>
         <Tooltip title="Open settings">
@@ -161,14 +162,16 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
             <Settings style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Cinematic mode">
+        {/* Cinematic mode button - commented out for UI simplification */}
+        {/* <Tooltip title="Cinematic mode">
           <IconButton className="btn-cinematic" onClick={() => { setCinematic(!cinematic); }} style={{ backgroundColor: "#2A2B37", width: 36, height: 36 }} size="large">
             <Movie style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
           </IconButton>
-        </Tooltip>
+        </Tooltip> */}
       </div>
 
-      <div className="loader-container">
+      {/* Loader - commented out for UI simplification */}
+      {/* <div className="loader-container">
         <Fade
           in={loading}
           style={{
@@ -178,9 +181,10 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         >
           <CircularProgress color="inherit" />
         </Fade>
-      </div>
+      </div> */}
 
-      <Snackbar
+      {/* Snackbars - commented out for UI simplification */}
+      {/* <Snackbar
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         open={snack.open}
         autoHideDuration={4000}
@@ -206,15 +210,17 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
           <Typography>Use keyboard shortcuts to control animation</Typography>
           <Typography>Press <b>Escape</b> to exit</Typography>
         </div>
-      </Snackbar>
+      </Snackbar> */}
 
-      <div className="mobile-controls">
+      {/* Mobile controls - commented out for UI simplification */}
+      {/* <div className="mobile-controls">
         <Button onClick={() => { setPlaceEnd(!placeEnd); }} style={{ color: "#fff", backgroundColor: "#404156", paddingInline: 30, paddingBlock: 7 }} variant="contained">
           {placeEnd ? "placing end node" : "placing start node"}
         </Button>
-      </div>
+      </div> */}
 
-      <Backdrop
+      {/* Tutorial backdrop - commented out for UI simplification */}
+      {/* <Backdrop
         open={showTutorial}
          onClick={(e) => { if ((e.target as HTMLElement).classList.contains("backdrop")) setShowTutorial(false); }}
         className="backdrop"
@@ -273,9 +279,10 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
             </Button>
           </div>
         </div>
-      </Backdrop>
+      </Backdrop> */}
 
-      <Drawer
+      {/* Settings drawer - commented out for UI simplification */}
+      {/* <Drawer
         className={`side-drawer ${cinematic ? "cinematic" : ""}`}
         anchor="left"
         open={sidebar}
@@ -467,15 +474,50 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
             </Button>
           </div>
         </div>
-      </Drawer>
+      </Drawer> */}
 
-      <a href="https://github.com/honzaap/Pathfinding" aria-label="GitHub repository" target="_blank" className={`github-corner ${cinematic ? "cinematic" : ""}`}>
+      {/* GitHub ribbon - removed for UI simplification */}
+      {/* <a href="https://github.com/honzaap/Pathfinding" aria-label="GitHub repository" target="_blank" className={`github-corner ${cinematic ? "cinematic" : ""}`}>
         <svg width="60" height="60" viewBox="0 0 250 250">
           <path fill="#2A2B37" d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
           <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" className="octo-arm"></path>
           <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" className="octo-body"></path>
         </svg>
-      </a>
+      </a> */}
+
+      {/* Bottom Timeline Control Panel */}
+      <div className="timeline-panel">
+        <div className="timeline-controls">
+          <IconButton disabled={!canStart} onClick={handlePlay} style={{ backgroundColor: "#46B780", width: 48, height: 48 }} size="large">
+            {(!started || animationEnded && !playbackOn)
+              ? <PlayArrow style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
+              : <Pause style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
+            }
+          </IconButton>
+          <IconButton disabled={!animationEnded && started} onClick={clearPath} style={{ backgroundColor: "#404156", width: 48, height: 48 }} size="large">
+            <Replay style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
+          </IconButton>
+        </div>
+        <div className="timeline-scrubber">
+          <Typography variant="caption" style={{ color: "#A8AFB3", marginBottom: 4 }}>
+            Timeline
+          </Typography>
+          <Slider
+            disabled={!animationEnded}
+            value={animationEnded ? time : maxTime}
+            min={animationEnded ? 0 : -1}
+            max={maxTime}
+            onChange={(_e: any, value: any) => { timeChanged(Number(value)); }}
+            className="timeline-slider"
+            style={{ width: "100%" }}
+          />
+        </div>
+        <div className="timeline-info">
+          <Typography variant="caption" style={{ color: "#A8AFB3" }}>
+            {animationEnded ? `${Math.round(time)} / ${Math.round(maxTime)}` : 'Not ready'}
+          </Typography>
+        </div>
+      </div>
     </>
   );
 });

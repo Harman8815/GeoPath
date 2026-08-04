@@ -84,9 +84,51 @@ export function getCurrentCachedAreas(): BoundingBox[] {
   return validAreas;
 }
 
+function isPointInCachedArea(latitude: number, longitude: number): CachedArea | null {
+  for (const [key, cached] of areaCache) {
+    if (Date.now() - cached.timestamp > CACHE_DURATION) {
+      continue;
+    }
+
+    if (
+      latitude >= cached.boundingBox.minLat &&
+      latitude <= cached.boundingBox.maxLat &&
+      longitude >= cached.boundingBox.minLon &&
+      longitude <= cached.boundingBox.maxLon
+    ) {
+      console.log("[GeoPath] Point is within cached area:", cached.boundingBox);
+      return cached;
+    }
+  }
+
+  return null;
+}
+
 export async function getNearestNode(latitude: number, longitude: number, existingGraph?: Graph | null): Promise<OverpassNode | null> {
   try {
-    // First check if we can find the node in the existing graph
+    // First check if the point is within any cached area
+    const cachedArea = isPointInCachedArea(latitude, longitude);
+    if (cachedArea) {
+      // Use the cached graph to find the nearest node
+      const nodes = cachedArea.graph.getNodes();
+      let result: OverpassNode | null = null;
+      let minDistance = Infinity;
+
+      for (const [id, node] of nodes) {
+        const distance = calculateDistance(latitude, longitude, node.latitude, node.longitude);
+        if (distance < minDistance) {
+          minDistance = distance;
+          result = { id, lat: node.latitude, lon: node.longitude, type: 'node' };
+        }
+      }
+
+      if (result) {
+        console.log("[GeoPath] Found nearest node in cached area:", result);
+        return result;
+      }
+    }
+
+    // Then check if we can find the node in the existing graph (if different from cached)
     if (existingGraph) {
       const nodes = existingGraph.getNodes();
       let result: OverpassNode | null = null;
@@ -100,7 +142,7 @@ export async function getNearestNode(latitude: number, longitude: number, existi
         }
       }
 
-      if (result && minDistance < 0.5) { // Within 0.5 degrees
+      if (result && minDistance < 0.01) { // Within 0.01 degrees (~1.1km)
         console.log("[GeoPath] Found nearest node in existing graph:", result);
         return result;
       }

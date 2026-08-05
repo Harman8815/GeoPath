@@ -39,20 +39,17 @@ export default function Map() {
   const {
     isRunning,
     isFinished,
-    waypoints,
     exploredEdges,
     finalPath,
     startPathfinding,
     resetPathfinding,
     setGraph,
     setEndNodeId,
-    timer,
   } = usePathfinding();
 
   // Calculate maxTime from all animation data
   const maxTime = Math.max(
     0,
-    ...waypoints.map(w => w.timestamps[1]),
     ...exploredEdges.map(e => e.timestamps[1]),
     ...finalPath.map(f => f.timestamps[1])
   );
@@ -271,7 +268,7 @@ export default function Map() {
 
   const selectionRadiusOpacity = fadeRadius ? (fadeRadiusReverse ? 0 : 1) : 0;
 
-  console.log("[GeoPath] Map render:", { startNode, endNode, loading, isRunning, waypoints: waypoints.length, viewState, apiStatus });
+  console.log("[GeoPath] Map render:", { startNode, endNode, loading, isRunning, exploredEdges: exploredEdges.length, viewState, apiStatus });
 
   return (
     <>
@@ -431,24 +428,6 @@ export default function Map() {
               data: finalPath,
             }}
           />
-          <TripsLayer
-            id={"pathfinding-layer"}
-            data={waypoints}
-            opacity={1}
-            widthMinPixels={3}
-            widthMaxPixels={5}
-            fadeTrail={false}
-            currentTime={timer}
-            trailLength={1000}
-            jointRounded={true}
-            capRounded={true}
-            getColor={(d: any) => colors[d.color as keyof typeof colors]}
-            updateTriggers={{
-              getColor: [colors.path, colors.route],
-              data: waypoints,
-              currentTime: timer,
-            }}
-          />
           <ScatterplotLayer
             id="start-end-points"
             data={[
@@ -485,8 +464,8 @@ export default function Map() {
         started={isRunning}
         animationEnded={isFinished}
         playbackOn={false}
-        time={timer}
-        maxTime={timer}
+        time={0}
+        maxTime={0}
         settings={settings}
         colors={colors}
         loading={loading}

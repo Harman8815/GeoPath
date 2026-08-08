@@ -110,33 +110,37 @@ export function usePathfinding() {
     setFinalPath(finalPathWaypoints);
   }, []);
 
-  const animate = useCallback(() => {
-    const updatedSteps = stateRef.current.nextStep();
+  const animateRef = useRef<(() => void) | null>(null);
 
-    console.log("[GeoPath] Animation step:", {
-      stepsProcessed: updatedSteps.length,
-      isRunning: isRunningRef.current,
-      isFinished: stateRef.current.isFinished(),
-      totalExploredEdges: exploredEdges.length
-    });
+  useEffect(() => {
+    animateRef.current = () => {
+      const updatedSteps = stateRef.current.nextStep();
 
-    if (updatedSteps.length > 0) {
-      setAnimationSteps(prev => [...prev, ...updatedSteps]);
-      updatedSteps.forEach(processExploredEdge);
-    }
+      console.log("[GeoPath] Animation step:", {
+        stepsProcessed: updatedSteps.length,
+        isRunning: isRunningRef.current,
+        isFinished: stateRef.current.isFinished(),
+        totalExploredEdges: exploredEdges.length
+      });
 
-    if (stateRef.current.isFinished()) {
-      console.log("[GeoPath] Animation finished - reconstructing final path");
-      setIsFinished(true);
-      setIsRunning(false);
-      isRunningRef.current = false;
-      animateFinalPath();
-      return;
-    }
+      if (updatedSteps.length > 0) {
+        setAnimationSteps(prev => [...prev, ...updatedSteps]);
+        updatedSteps.forEach(processExploredEdge);
+      }
 
-    if (isRunningRef.current) {
-      timeoutRef.current = window.setTimeout(animate, animationDelay);
-    }
+      if (stateRef.current.isFinished()) {
+        console.log("[GeoPath] Animation finished - reconstructing final path");
+        setIsFinished(true);
+        setIsRunning(false);
+        isRunningRef.current = false;
+        animateFinalPath();
+        return;
+      }
+
+      if (isRunningRef.current) {
+        timeoutRef.current = window.setTimeout(() => animateRef.current?.(), animationDelay);
+      }
+    };
   }, [processExploredEdge, animateFinalPath, exploredEdges, animationDelay]);
 
   const startPathfinding = useCallback((algorithm: AlgorithmType) => {
@@ -151,15 +155,14 @@ export function usePathfinding() {
       setFinalPath([]);
       exploredTimerRef.current = 0;
 
-      // Start animation loop with delay
       console.log("[GeoPath] Animation loop started with delay:", animationDelay, "ms");
-      timeoutRef.current = window.setTimeout(animate, animationDelay);
+      timeoutRef.current = window.setTimeout(() => animateRef.current?.(), animationDelay);
     } catch (error) {
       console.error('[GeoPath] Failed to start pathfinding:', error);
       setIsRunning(false);
       isRunningRef.current = false;
     }
-  }, [animate, animationDelay]);
+  }, [animationDelay]);
 
   const stopPathfinding = useCallback(() => {
     setIsRunning(false);

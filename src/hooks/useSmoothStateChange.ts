@@ -1,13 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 function useSmoothStateChange(initialState: number, fromValue: number, toValue: number, duration: number, trigger: boolean, reverse: boolean) {
   const [state, setState] = useState(initialState);
-  const startTime = Date.now();
+  const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    startTimeRef.current = null;
+  }, [fromValue, toValue, duration, reverse]);
 
   useEffect(() => {
     function updateState() {
       const currentTime = Date.now();
+      const startTime = startTimeRef.current ?? currentTime;
+      startTimeRef.current = startTime;
       const elapsedTime = currentTime - startTime;
 
       if (elapsedTime < duration) {

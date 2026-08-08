@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-const AlgorithmDetailPage = dynamic(() => import("@/components/AlgorithmDetailPage"), { ssr: false });
+const AlgorithmDetailPage = dynamic(() => import("@/components/AlgorithmDetailPage").then((mod) => ({ default: mod.AlgorithmDetailPage })), { ssr: false });
 
 export default function AlgorithmDetailRoute() {
   const params = useParams();

@@ -151,12 +151,30 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
             <Settings style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
           </IconButton>
         </Tooltip>
-        {/* Cinematic mode button - commented out for UI simplification */}
-        {/* <Tooltip title="Cinematic mode">
-          <IconButton className="btn-cinematic" onClick={() => { setCinematic(!cinematic); }} style={{ backgroundColor: "#2A2B37", width: 36, height: 36 }} size="large">
-            <Movie style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
+      </div>
+
+      <div className={`nav-top-right ${cinematic ? "cinematic" : ""}`} style={{
+        position: 'fixed',
+        right: '24px',
+        top: '20px',
+        display: 'flex',
+        gap: '12px',
+        zIndex: 1000,
+        transition: 'transform 500ms ease-out, opacity 300ms ease-in'
+      }}>
+        <Tooltip title={(!started || animationEnded && !playbackOn) ? "Start visualizer" : "Pause visualizer"}>
+          <IconButton disabled={!canStart} onClick={handlePlay} style={{ backgroundColor: "#46B780", width: 36, height: 36 }} size="large">
+            {(!started || animationEnded && !playbackOn)
+              ? <PlayArrow style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
+              : <Pause style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
+            }
           </IconButton>
-        </Tooltip> */}
+        </Tooltip>
+        <Tooltip title="Reset visualizer">
+          <IconButton disabled={!animationEnded && started} onClick={clearPath} style={{ backgroundColor: "#404156", width: 36, height: 36 }} size="large">
+            <Replay style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
       </div>
 
       {/* Loader - commented out for UI simplification */}
@@ -485,39 +503,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         </svg>
       </a> */}
 
-      {/* Bottom Timeline Control Panel */}
-      <div className="timeline-panel">
-        <div className="timeline-controls">
-          <IconButton disabled={!canStart} onClick={handlePlay} style={{ backgroundColor: "#46B780", width: 48, height: 48 }} size="large">
-            {(!started || animationEnded && !playbackOn)
-              ? <PlayArrow style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
-              : <Pause style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
-            }
-          </IconButton>
-          <IconButton disabled={!animationEnded && started} onClick={clearPath} style={{ backgroundColor: "#404156", width: 48, height: 48 }} size="large">
-            <Replay style={{ color: "#fff", width: 24, height: 24 }} fontSize="inherit" />
-          </IconButton>
-        </div>
-        <div className="timeline-scrubber">
-          <Typography variant="caption" style={{ color: "#A8AFB3", marginBottom: 4 }}>
-            Timeline
-          </Typography>
-          <Slider
-            disabled={!animationEnded}
-            value={animationEnded ? time : maxTime}
-            min={animationEnded ? 0 : -1}
-            max={maxTime}
-            onChange={(_e: any, value: any) => { timeChanged(Number(value)); }}
-            className="timeline-slider"
-            style={{ width: "100%" }}
-          />
-        </div>
-        <div className="timeline-info">
-          <Typography variant="caption" style={{ color: "#A8AFB3" }}>
-            {animationEnded ? (maxTime > 0 ? `${Math.round(time)} / ${Math.round(maxTime)}` : 'No path found') : 'Not ready'}
-          </Typography>
-        </div>
-      </div>
+
     </>
   );
 });

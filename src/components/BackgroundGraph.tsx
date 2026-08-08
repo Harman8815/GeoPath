@@ -42,7 +42,7 @@ export const BackgroundGraph: React.FC = () => {
     // Node Count based on screen size
     const nodeCount = Math.min(Math.floor((width * height) / 22000), 55);
     let nodes: ParticleNode[] = [];
-    let pulses: PulsePacket[] = [];
+    const pulses: PulsePacket[] = [];
 
     function initNodes() {
       nodes = [];

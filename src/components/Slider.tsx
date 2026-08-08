@@ -17,7 +17,11 @@ const SuccessSlider = styled(Slider)(() => ({
   },
 }));
 
-export default function StyledSlider({ disabled, value, min, max, step, onInput, onChange, onChangeCommited, defaultValue, marks, style, className, ...rest }: any) {
+interface StyledSliderProps extends Omit<React.ComponentProps<typeof Slider>, 'onChangeCommitted'> {
+  onChangeCommited?: React.ComponentProps<typeof Slider>['onChangeCommitted'];
+}
+
+export default function StyledSlider({ disabled, value, min, max, step, onInput, onChange, onChangeCommited, defaultValue, marks, style, className, ...rest }: StyledSliderProps) {
   return (
     <SuccessSlider
       disabled={disabled}

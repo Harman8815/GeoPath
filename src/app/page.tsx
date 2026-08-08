@@ -2,9 +2,8 @@
 
 import dynamic from "next/dynamic";
 
-const App = dynamic(() => import("@/components/App"), { ssr: false });
+const AppNew = dynamic(() => import("@/components/App_new"), { ssr: false });
 
 export default function Home() {
-  console.log("[GeoPath] Home page render");
-  return <App />;
+  return <AppNew />;
 }

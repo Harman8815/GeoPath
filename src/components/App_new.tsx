@@ -1,0 +1,201 @@
+import React, { useState, useEffect } from 'react';
+import { Navbar } from './Navbar';
+import { BackgroundGraph } from './BackgroundGraph';
+import { Hero } from './Hero';
+import { AlgorithmCards } from './AlgorithmCards';
+import { HowItWorks } from './HowItWorks';
+import { BenchmarkSection } from './BenchmarkSection';
+import { VisualizerSection } from './VisualizerSection';
+import { MapExplorer } from './MapExplorer';
+import { AlgorithmCatalog } from './AlgorithmCatalog';
+import { AlgorithmDetailPage } from './AlgorithmDetailPage';
+import { CallToAction } from './CallToAction';
+import { Footer } from './Footer';
+import { AlgorithmType } from '../types';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<'home' | 'visualizer' | 'map' | 'algorithms'>('home');
+  const [selectedAlgoId, setSelectedAlgoId] = useState<string | null>(null);
+
+  // Read URL query parameter on mount and handle browser back/forward buttons
+  useEffect(() => {
+    const parseUrlParam = () => {
+      const params = new URLSearchParams(window.location.search);
+      const algoParam = params.get('algo');
+      if (algoParam) {
+        setSelectedAlgoId(algoParam);
+        setActiveTab('algorithms');
+      } else {
+        setSelectedAlgoId(null);
+      }
+    };
+
+    parseUrlParam();
+
+    const handlePopState = () => {
+      parseUrlParam();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleNavigateSection = (sectionId: string) => {
+    // If returning from algorithm detail page, clear URL param
+    if (selectedAlgoId) {
+      handleBackToCatalog();
+    }
+    setActiveTab('home');
+    setTimeout(() => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
+  };
+
+  const handleSelectAlgorithm = (algoId: string) => {
+    setSelectedAlgoId(algoId);
+    setActiveTab('algorithms');
+    
+    // Update URL query parameter without page reload
+    const url = new URL(window.location.href);
+    url.searchParams.set('algo', algoId);
+    window.history.pushState({}, '', url.toString());
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToCatalog = () => {
+    setSelectedAlgoId(null);
+    
+    // Remove URL query parameter
+    const url = new URL(window.location.href);
+    url.searchParams.delete('algo');
+    window.history.pushState({}, '', url.toString());
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectAlgorithmForPlayground = (algo: AlgorithmType) => {
+    handleSelectAlgorithm(algo);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#121417] text-slate-100 font-sans antialiased selection:bg-slate-700 selection:text-white relative overflow-x-hidden">
+      {/* Background radial grid pattern & canvas graph */}
+      <div className="fixed inset-0 grid-pattern pointer-events-none opacity-50 z-0" />
+      {activeTab === 'home' && <BackgroundGraph />}
+
+      {activeTab === 'home' && (
+        <div className="relative z-10 flex flex-col min-h-screen">
+          {/* Responsive Header */}
+          <Navbar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              if (selectedAlgoId) handleBackToCatalog();
+              setActiveTab(tab);
+            }}
+            onNavigateSection={handleNavigateSection}
+          />
+
+          {/* Main Landing Page Content */}
+          <main className="flex-grow">
+            <Hero
+              onOpenVisualizer={() => setActiveTab('map')}
+              onNavigateSection={handleNavigateSection}
+            />
+
+            <AlgorithmCards
+              onSelectAlgorithmForPlayground={handleSelectAlgorithmForPlayground}
+            />
+
+            <HowItWorks />
+
+            <BenchmarkSection />
+
+            <CallToAction
+              onOpenVisualizer={() => setActiveTab('map')}
+            />
+          </main>
+
+          {/* Minimalist Dark Footer */}
+          <Footer
+            onNavigateSection={handleNavigateSection}
+            onOpenVisualizer={() => setActiveTab('map')}
+          />
+        </div>
+      )}
+
+      {activeTab === 'map' && (
+        <div className="relative z-10 flex flex-col min-h-screen bg-[#121417]">
+          <Navbar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              if (selectedAlgoId) handleBackToCatalog();
+              setActiveTab(tab);
+            }}
+            onNavigateSection={handleNavigateSection}
+          />
+          <main className="flex-grow">
+            <MapExplorer onBackToHome={() => setActiveTab('home')} />
+          </main>
+        </div>
+      )}
+
+      {activeTab === 'visualizer' && (
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <Navbar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              if (selectedAlgoId) handleBackToCatalog();
+              setActiveTab(tab);
+            }}
+            onNavigateSection={handleNavigateSection}
+          />
+          <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+            <VisualizerSection onBackToHome={() => setActiveTab('home')} />
+          </main>
+          <Footer
+            onNavigateSection={handleNavigateSection}
+            onOpenVisualizer={() => setActiveTab('map')}
+          />
+        </div>
+      )}
+
+      {activeTab === 'algorithms' && (
+        <div className="relative z-10 flex flex-col min-h-screen bg-[#121417]">
+          <Navbar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              if (selectedAlgoId) handleBackToCatalog();
+              setActiveTab(tab);
+            }}
+            onNavigateSection={handleNavigateSection}
+          />
+          <main className="flex-grow">
+            {selectedAlgoId ? (
+              <AlgorithmDetailPage
+                algoId={selectedAlgoId}
+                onBack={handleBackToCatalog}
+                onSelectAlgo={handleSelectAlgorithm}
+                onOpenMap={() => setActiveTab('map')}
+              />
+            ) : (
+              <AlgorithmCatalog
+                onSelectAlgorithm={handleSelectAlgorithm}
+                onOpenMap={() => setActiveTab('map')}
+              />
+            )}
+          </main>
+          {!selectedAlgoId && (
+            <Footer
+              onNavigateSection={handleNavigateSection}
+              onOpenVisualizer={() => setActiveTab('map')}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

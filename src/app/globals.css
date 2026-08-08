@@ -417,3 +417,52 @@ canvas {
   }
 }
 
+@layer base {
+  body {
+    background-color: #121417;
+    color: #f8fafc;
+  }
+}
+
+@layer utilities {
+  .grid-pattern {
+    background-image: radial-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .glass {
+    background: rgba(26, 29, 35, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-card {
+    background: rgba(28, 31, 38, 0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-card-hover {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-card-hover:hover {
+    background: rgba(36, 40, 49, 0.95);
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.path-animated {
+  stroke: rgba(16, 185, 129, 0.6);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 5;
+  animation: dash 20s linear infinite;
+}
+

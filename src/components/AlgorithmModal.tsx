@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   X, Code, FileText, Cpu, GitFork, Play, Pause, RotateCcw, 
   Copy, Check, ChevronDown, Sparkles, Layers, Activity, FastForward, Navigation, Hash
@@ -36,20 +36,12 @@ export const AlgorithmModal: React.FC<AlgorithmModalProps> = ({ algorithm, onClo
 
   const ROWS = 12;
   const COLS = 16;
-  const START_POS = { r: 2, c: 2 };
-  const TARGET_POS = { r: 9, c: 13 };
+  const START_POS = useMemo(() => ({ r: 2, c: 2 }), []);
+  const TARGET_POS = useMemo(() => ({ r: 9, c: 13 }), []);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize interactive grid
-  useEffect(() => {
-    initializeGrid();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [algorithm.id]);
-
-  const initializeGrid = () => {
+  const initializeGrid = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsRunning(false);
     setIsPaused(false);
@@ -64,7 +56,6 @@ export const AlgorithmModal: React.FC<AlgorithmModalProps> = ({ algorithm, onClo
         let type: CellType = 'empty';
         if (r === START_POS.r && c === START_POS.c) type = 'start';
         else if (r === TARGET_POS.r && c === TARGET_POS.c) type = 'target';
-        // Add sample obstacles for visual interest
         else if ((r === 4 && c >= 3 && c <= 12) || (r === 7 && c >= 2 && c <= 11 && c !== 6)) {
           type = 'wall';
         }
@@ -84,7 +75,16 @@ export const AlgorithmModal: React.FC<AlgorithmModalProps> = ({ algorithm, onClo
       newGrid.push(row);
     }
     setGrid(newGrid);
-  };
+  }, [START_POS, TARGET_POS]);
+
+  // Initialize interactive grid
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    initializeGrid();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [algorithm.id, initializeGrid]);
 
   // Run pathfinding animation and generate memory cell logs
   const handleRunAnimation = () => {
@@ -563,7 +563,7 @@ export const AlgorithmModal: React.FC<AlgorithmModalProps> = ({ algorithm, onClo
                       <div>
                         <p className="text-xs font-semibold text-slate-300">No Memory Logs Generated Yet</p>
                         <p className="text-[11px] text-slate-500 max-w-sm mx-auto mt-1">
-                          Click "Run Animation" on the right panel to execute the pathfinder and capture live memory cell mutations in real time.
+                          Click &quot;Run Animation&quot; on the right panel to execute the pathfinder and capture live memory cell mutations in real time.
                         </p>
                       </div>
                     </div>

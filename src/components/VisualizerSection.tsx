@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useLayoutEffect, useRef, useCallback } from 'react';
 import {
-  Play, RotateCcw, Trash2, Sparkles, MapPin, Navigation, Settings2,
-  Maximize2, Minimize2, CheckCircle2, AlertTriangle, Layers, HelpCircle, FastForward, Pause
+  Play, RotateCcw, Trash2, MapPin, Navigation
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { AlgorithmType, GridNode, HeuristicType, CellType, SimulationStats } from '../types';
+import { AlgorithmType, GridNode, SimulationStats } from '../types';
 import {
   createGrid, executeAlgorithm, generateRandomWalls,
   generateWeightedSwamps, generateRecursiveDivisionMaze, cloneGrid
@@ -35,20 +34,14 @@ export const VisualizerSection: React.FC<{ onBackToHome: () => void }> = ({ onBa
   });
 
   const [hoveredNode, setHoveredNode] = useState<GridNode | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
   const animTimeoutRef = useRef<NodeJS.Timeout[]>([]);
 
-  // Initialize Grid
-  useEffect(() => {
-    resetGridToEmpty();
-  }, []);
-
-  const clearAnimTimeouts = () => {
+  const clearAnimTimeouts = useCallback(() => {
     animTimeoutRef.current.forEach(clearTimeout);
     animTimeoutRef.current = [];
-  };
+  }, []);
 
-  const resetGridToEmpty = () => {
+  const resetGridToEmpty = useCallback(() => {
     clearAnimTimeouts();
     const newGrid = createGrid(ROWS, COLS, startPos, targetPos);
     setGrid(newGrid);
@@ -59,7 +52,7 @@ export const VisualizerSection: React.FC<{ onBackToHome: () => void }> = ({ onBa
       executionTimeMs: 0,
       status: 'idle',
     });
-  };
+  }, [startPos, targetPos, clearAnimTimeouts]);
 
   const resetPathOnly = () => {
     clearAnimTimeouts();
@@ -81,6 +74,12 @@ export const VisualizerSection: React.FC<{ onBackToHome: () => void }> = ({ onBa
       status: 'idle',
     });
   };
+
+  // Initialize Grid
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    resetGridToEmpty();
+  }, [resetGridToEmpty]);
 
   // Mouse interaction for grid drawing / dragging nodes
   const handleMouseDown = (r: number, c: number) => {

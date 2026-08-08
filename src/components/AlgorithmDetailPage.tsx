@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ArrowLeft, ChevronLeft, ChevronRight, Code, FileText, Cpu, GitFork, Play, RotateCcw, 
   Copy, Check, Layers, Activity, Navigation, Share2, Compass, CornerDownRight, RefreshCw, Sparkles
@@ -162,14 +162,47 @@ export const AlgorithmDetailPage: React.FC<AlgorithmDetailPageProps> = ({
   const COLS = 16;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const initializeGrid = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsRunning(false);
+    setMemoryLogs([]);
+    setCurrentStepIndex(-1);
+    setStats({ visited: 0, pathLength: 0, status: 'Ready' });
+
+    const newGrid: GridNode[][] = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row: GridNode[] = [];
+      for (let c = 0; c < COLS; c++) {
+        let type: CellType = 'empty';
+        if (r === startPos.r && c === startPos.c) type = 'start';
+        else if (r === targetPos.r && c === targetPos.c) type = 'target';
+        else if (wallNodes.has(`${r},${c}`)) type = 'wall';
+
+        row.push({
+          row: r,
+          col: c,
+          type,
+          distance: r === startPos.r && c === startPos.c ? 0 : Infinity,
+          heuristic: Math.abs(r - targetPos.r) + Math.abs(c - targetPos.c),
+          totalCost: Infinity,
+          isVisited: false,
+          previousNode: null,
+          weight: 1
+        });
+      }
+      newGrid.push(row);
+    }
+    setGrid(newGrid);
+  }, [startPos, targetPos, wallNodes]);
+
   // Reset/Initialize Grid
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     initializeGrid();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [algorithm.id, startPos, targetPos, wallNodes]);
+  }, [algorithm.id, startPos, targetPos, wallNodes, initializeGrid]);
 
   const handlePrevAlgo = () => {
     const prevIdx = (currentIndex - 1 + DETAILED_ALGORITHMS.length) % DETAILED_ALGORITHMS.length;
@@ -206,39 +239,6 @@ export const AlgorithmDetailPage: React.FC<AlgorithmDetailPageProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const initializeGrid = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setIsRunning(false);
-    setMemoryLogs([]);
-    setCurrentStepIndex(-1);
-    setStats({ visited: 0, pathLength: 0, status: 'Ready' });
-
-    const newGrid: GridNode[][] = [];
-    for (let r = 0; r < ROWS; r++) {
-      const row: GridNode[] = [];
-      for (let c = 0; c < COLS; c++) {
-        let type: CellType = 'empty';
-        if (r === startPos.r && c === startPos.c) type = 'start';
-        else if (r === targetPos.r && c === targetPos.c) type = 'target';
-        else if (wallNodes.has(`${r},${c}`)) type = 'wall';
-
-        row.push({
-          row: r,
-          col: c,
-          type,
-          distance: r === startPos.r && c === startPos.c ? 0 : Infinity,
-          heuristic: Math.abs(r - targetPos.r) + Math.abs(c - targetPos.c),
-          totalCost: Infinity,
-          isVisited: false,
-          previousNode: null,
-          weight: 1
-        });
-      }
-      newGrid.push(row);
-    }
-    setGrid(newGrid);
   };
 
   // Node Editing Handlers

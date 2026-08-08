@@ -3,7 +3,7 @@ import {
   Play, RotateCcw, Trash2, MapPin, Navigation
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { AlgorithmType, GridNode, SimulationStats } from '../types';
+import { AlgorithmType, GridNode, HeuristicType, SimulationStats } from '../types';
 import {
   createGrid, executeAlgorithm, generateRandomWalls,
   generateWeightedSwamps, generateRecursiveDivisionMaze, cloneGrid

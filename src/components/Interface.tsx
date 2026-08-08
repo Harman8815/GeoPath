@@ -16,7 +16,7 @@ interface InterfaceProps {
   playbackOn: boolean;
   time: number;
   maxTime: number;
-  settings: { algorithm: string; radius: number; speed: number };
+  settings: MapSettings;
   colors: {
     startNodeFill: number[];
     startNodeBorder: number[];
@@ -35,7 +35,7 @@ interface InterfaceProps {
   changeAlgorithm: (algorithm: string) => void;
   setPlaceEnd: (placeEnd: boolean) => void;
   setCinematic: (cinematic: boolean) => void;
-  setSettings: (settings: { algorithm: string; radius: number; speed: number }) => void;
+  setSettings: (settings: MapSettings) => void;
   setColors: (colors: ColorScheme) => void;
   startPathfinding: () => void;
   toggleAnimation: (loop?: boolean, direction?: number) => void;

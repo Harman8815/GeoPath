@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { PathfindingState } from '../models/PathfindingState';
 import { Graph } from '../models/Graph';
 import type { AnimationStep, AlgorithmType, WaypointData } from '../types';

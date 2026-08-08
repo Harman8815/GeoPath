@@ -8,7 +8,7 @@ import { PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { FlyToInterpolator } from "deck.gl";
 import { TripsLayer } from "@deck.gl/geo-layers";
 import { createGeoJSONCircle } from "../helpers";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getBoundingBoxFromPolygon, getMapGraph, getNearestNode, getCurrentCachedAreas } from "../services/MapService";
 import { Graph } from "../models/Graph";
 import Interface from "./Interface";
@@ -34,7 +34,7 @@ export default function Map() {
   const [isFetching, setIsFetching] = useState(false);
   const [pulseOpacity, setPulseOpacity] = useState(1);
 
-  const interfaceRef = useRef<any>(null);
+  const interfaceRef = useRef<{ showSnack: (message: string, type?: string) => void } | null>(null);
 
   const {
     isRunning,
@@ -54,7 +54,7 @@ export default function Map() {
     ...finalPath.map(f => f.timestamps[1])
   );
 
-  const handleMapClick = async (e: any, info: any, radius: number | null = null) => {
+  const handleMapClick = async (e: { coordinate?: [number, number]; layer?: { id?: string } }, info: { rightButton?: boolean }, radius: number | null = null) => {
     if (isRunning) return;
 
     setFadeRadiusReverse(false);
@@ -76,8 +76,13 @@ export default function Map() {
       setApiStatus('loading');
 
       try {
-        // Use existing graph to find nearest node without API call
-        const node = await getNearestNode(e.coordinate[1], e.coordinate[0], currentGraph);
+        if (!e.coordinate) {
+          interfaceRef.current?.showSnack("Invalid click location.", "error");
+          setLoading(false);
+          return;
+        }
+        const coord = e.coordinate;
+        const node = await getNearestNode(coord[1], coord[0], currentGraph);
         if (!node) {
           interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
           setApiStatus('error');
@@ -88,10 +93,14 @@ export default function Map() {
         setEndNode(node);
         setEndNodeId(node.id);
         setApiStatus('success');
-      } catch (error: any) {
-        console.error("[GeoPath] Error fetching end node:", error);
+    } catch (error) {
+      console.error("[GeoPath] Error fetching end node:", error);
+      if (error instanceof Error) {
         interfaceRef.current?.showSnack(error.message || "An error occurred while fetching the end node.", "error");
-        setApiStatus('error');
+      } else {
+        interfaceRef.current?.showSnack("An error occurred while fetching the end node.", "error");
+      }
+      setApiStatus('error');
       } finally {
         setLoading(false);
       }
@@ -103,7 +112,13 @@ export default function Map() {
     setApiStatus('loading');
 
     try {
-      const node = await getNearestNode(e.coordinate[1], e.coordinate[0]);
+      if (!e.coordinate) {
+        interfaceRef.current?.showSnack("Invalid click location.", "error");
+        setLoading(false);
+        return;
+      }
+      const coord = e.coordinate;
+      const node = await getNearestNode(coord[1], coord[0]);
       if (!node) {
         interfaceRef.current?.showSnack("No path was found in the vicinity, please try another location.", "info");
         setApiStatus('error');
@@ -147,9 +162,13 @@ export default function Map() {
       
       // Update cached areas visualization
       updateCachedAreasVisualization();
-    } catch (error: any) {
+    } catch (error) {
       console.error("[GeoPath] Error loading map graph:", error);
-      interfaceRef.current?.showSnack(error.message || "An error occurred while loading the map graph.", "error");
+      if (error instanceof Error) {
+        interfaceRef.current?.showSnack(error.message || "An error occurred while loading the map graph.", "error");
+      } else {
+        interfaceRef.current?.showSnack("An error occurred while loading the map graph.", "error");
+      }
       setApiStatus('error');
       setFetchingArea(null);
       setIsFetching(false);
@@ -175,7 +194,7 @@ export default function Map() {
     setSelectionRadius([]);
   };
 
-  const handleLocationChange = (location: any) => {
+  const handleLocationChange = useCallback((location: { longitude: number; latitude: number }) => {
     setViewState({ 
       ...viewState, 
       longitude: location.longitude, 
@@ -184,7 +203,7 @@ export default function Map() {
       transitionDuration: 1, 
       transitionInterpolator: new FlyToInterpolator() 
     });
-  };
+  }, [viewState]);
 
   const handleSettingsChange = (newSettings: MapSettings) => {
     setSettings(newSettings);
@@ -198,7 +217,7 @@ export default function Map() {
 
   const handleAlgorithmChange = (algorithm: string) => {
     handleClearPath();
-    handleSettingsChange({ ...settings, algorithm: algorithm as any });
+    handleSettingsChange({ ...settings, algorithm });
   };
 
   const handleRadiusChange = (radius: number) => {
@@ -236,6 +255,7 @@ export default function Map() {
   // Pulsing animation for fetching area
   useEffect(() => {
     if (!isFetching) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPulseOpacity(1);
       return;
     }
@@ -258,13 +278,14 @@ export default function Map() {
     if (savedSettings) {
       try {
         const items = JSON.parse(savedSettings);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSettings(items.settings);
         setColors({ ...INITIAL_COLORS, ...items.colors });
       } catch (error) {
         console.error("[GeoPath] Error loading settings:", error);
       }
     }
-  }, []);
+  }, [handleLocationChange]);
 
   const selectionRadiusOpacity = fadeRadius ? (fadeRadiusReverse ? 0 : 1) : 0;
 
@@ -364,7 +385,7 @@ export default function Map() {
             data={selectionRadius}
             pickable={true}
             stroked={true}
-            getPolygon={(d: any) => d.contour}
+            getPolygon={(d: unknown) => (d as { contour: number[][] }).contour}
             getFillColor={[80, 210, 0, 10]}
             getLineColor={[9, 142, 46, 175]}
             getLineWidth={3}
@@ -375,7 +396,7 @@ export default function Map() {
             data={cachedAreas}
             pickable={false}
             stroked={true}
-            getPolygon={(d: any) => d.contour}
+            getPolygon={(d: unknown) => (d as { contour: number[][] }).contour}
             getFillColor={[0, 100, 255, 25]}
             getLineColor={[0, 100, 255, 100]}
             getLineWidth={2}
@@ -387,7 +408,7 @@ export default function Map() {
               data={[fetchingArea]}
               pickable={false}
               stroked={true}
-              getPolygon={(d: any) => d.contour}
+              getPolygon={(d: unknown) => (d as { contour: number[][] }).contour}
               getFillColor={[255, 165, 0, isFetching ? 40 : 20]}
               getLineColor={[255, 165, 0, isFetching ? 255 : 150]}
               getLineWidth={isFetching ? 4 : 2}
@@ -405,7 +426,7 @@ export default function Map() {
             trailLength={1000000}
             jointRounded={true}
             capRounded={true}
-            getColor={(d: any) => colors.explored}
+            getColor={(_: unknown) => colors.explored}
             updateTriggers={{
               getColor: [colors.explored],
               data: exploredEdges,
@@ -422,7 +443,7 @@ export default function Map() {
             trailLength={1000000}
             jointRounded={true}
             capRounded={true}
-            getColor={(d: any) => colors.finalPath}
+            getColor={(_: unknown) => colors.finalPath}
             updateTriggers={{
               getColor: [colors.finalPath],
               data: finalPath,
@@ -443,17 +464,17 @@ export default function Map() {
             radiusMaxPixels={20}
             lineWidthMinPixels={1}
             lineWidthMaxPixels={3}
-            getPosition={(d: any) => d.coordinates}
-            getFillColor={(d: any) => d.color}
-            getLineColor={(d: any) => d.lineColor}
+            getPosition={(d: unknown) => (d as { coordinates: [number, number] }).coordinates}
+            getFillColor={(d: unknown) => (d as { color: number[] }).color}
+            getLineColor={(d: unknown) => (d as { lineColor: number[] }).lineColor}
           />
           <MapGL
             reuseMaps
-            mapLib={maplibregl as any}
+            mapLib={maplibregl as unknown as typeof maplibregl}
             mapStyle={MAP_STYLE}
             doubleClickZoom={false}
             onLoad={() => console.log("[GeoPath] MapGL onLoad - map loaded successfully")}
-            onError={(e: any) => console.error("[GeoPath] MapGL error:", e)}
+            onError={(e: unknown) => console.error("[GeoPath] MapGL error:", e)}
             style={{ width: "100%", height: "100%" }}
           />
         </DeckGL>

@@ -269,19 +269,19 @@ export async function getNearestNode(latitude: number, longitude: number, existi
 
     console.log("[GeoPath] getNearestNode result:", result);
     return result;
-  } catch (error: any) {
+  } catch (error) {
     console.error("[GeoPath] getNearestNode error:", error);
-    
-    // Check if it's a rate limit error
-    if (error.message?.includes("429") || error.message?.includes("Too Many Requests")) {
-      throw new Error("Overpass API rate limit exceeded. Please wait a moment before trying again.");
+
+    if (error instanceof Error) {
+      if (error.message?.includes("429") || error.message?.includes("Too Many Requests")) {
+        throw new Error("Overpass API rate limit exceeded. Please wait a moment before trying again.");
+      }
+
+      if (error.message?.includes("504") || error.message?.includes("Gateway Timeout")) {
+        throw new Error("Overpass API is currently overloaded. Please try again in a few moments.");
+      }
     }
-    
-    // Check if it's a gateway timeout
-    if (error.message?.includes("504") || error.message?.includes("Gateway Timeout")) {
-      throw new Error("Overpass API is currently overloaded. Please try again in a few moments.");
-    }
-    
+
     return null;
   }
 }
@@ -371,19 +371,19 @@ export async function getMapGraph(boundingBox: BoundingBox, startNodeId: number)
 
     pendingRequests.set(requestKey, requestPromise);
     return requestPromise;
-  } catch (error: any) {
+  } catch (error) {
     console.error("[GeoPath] getMapGraph error:", error);
-    
-    // Check if it's a rate limit error
-    if (error.message?.includes("429") || error.message?.includes("Too Many Requests")) {
-      throw new Error("Overpass API rate limit exceeded. Please wait a moment before trying again.");
+
+    if (error instanceof Error) {
+      if (error.message?.includes("429") || error.message?.includes("Too Many Requests")) {
+        throw new Error("Overpass API rate limit exceeded. Please wait a moment before trying again.");
+      }
+
+      if (error.message?.includes("504") || error.message?.includes("Gateway Timeout")) {
+        throw new Error("Overpass API is currently overloaded. Please try again in a few moments.");
+      }
     }
-    
-    // Check if it's a gateway timeout
-    if (error.message?.includes("504") || error.message?.includes("Gateway Timeout")) {
-      throw new Error("Overpass API is currently overloaded. Please try again in a few moments.");
-    }
-    
+
     throw error;
   }
 }

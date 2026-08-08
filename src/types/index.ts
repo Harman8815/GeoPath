@@ -182,5 +182,5 @@ export interface ViewState {
   pitch?: number;
   bearing?: number;
   transitionDuration?: number;
-  transitionInterpolator?: any;
+  transitionInterpolator?: unknown;
 }

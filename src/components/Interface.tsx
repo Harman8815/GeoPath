@@ -7,6 +7,7 @@ import Slider from "./Slider";
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { INITIAL_COLORS, LOCATIONS } from "../config";
 import { arrayToRgb, rgbToArray } from "../helpers";
+import type { MapSettings, ColorScheme, ViewState } from "../types";
 
 interface InterfaceProps {
   canStart: boolean;
@@ -34,12 +35,12 @@ interface InterfaceProps {
   changeAlgorithm: (algorithm: string) => void;
   setPlaceEnd: (placeEnd: boolean) => void;
   setCinematic: (cinematic: boolean) => void;
-  setSettings: (settings: any) => void;
-  setColors: (colors: any) => void;
+  setSettings: (settings: { algorithm: string; radius: number; speed: number }) => void;
+  setColors: (colors: ColorScheme) => void;
   startPathfinding: () => void;
   toggleAnimation: (loop?: boolean, direction?: number) => void;
   clearPath: () => void;
-  changeLocation: (location: any) => void;
+  changeLocation: (location: { name: string; latitude: number; longitude: number }) => void;
 }
 
 const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "info" | "success" | "warning") => void }, InterfaceProps>(({ canStart, started, animationEnded, playbackOn, time, maxTime, settings, colors, loading, timeChanged, cinematic, placeEnd, changeRadius, changeAlgorithm, setPlaceEnd, setCinematic, setSettings, setColors, startPathfinding, toggleAnimation, clearPath, changeLocation }, ref) => {
@@ -52,7 +53,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
   });
   const [tabIndex, setTabIndex] = useState(0);
   const [helper, setHelper] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState<any>(null);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuAnchor);
   const helperTime = useRef(4800);
   const rightDown = useRef(false);
@@ -87,7 +88,6 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
     setMenuAnchor(null);
   }
 
-  // @ts-ignore
   window.onkeydown = (e) => {
     if (e.code === "ArrowRight" && !rightDown.current && !leftDown.current && (!started || animationEnded)) {
       rightDown.current = true;
@@ -98,7 +98,6 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
     }
   };
 
-  // @ts-ignore
   window.onkeyup = (e) => {
     if (e.code === "Escape") setCinematic(false);
     else if (e.code === "Space") {
@@ -311,7 +310,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
                     >
                       <MenuItem value={"astar"}>A* algorithm</MenuItem>
                       <MenuItem value={"greedy"}>Greedy algorithm</MenuItem>
-                      <MenuItem value={"dijkstra"}>Dijkstra's algorithm</MenuItem>
+                       <MenuItem value={"dijkstra"}>Dijkstra&apos;s algorithm</MenuItem>
                       <MenuItem value={"bidirectional"}>Bidirectional Search</MenuItem>
                     </Select>
                   </FormControl>
@@ -387,7 +386,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
                   step={1} 
                   value={settings.radius} 
                   onChangeCommited={() => { changeRadius(settings.radius); }} 
-                  onChange={(_e: any, value: any) => { setSettings({ ...settings, radius: Number(value) }); }} 
+                  onChange={(_e: Event, value: number | number[]) => { setSettings({ ...settings, radius: Number(value) }); }} 
                   className="slider" 
                   aria-labelledby="area-slider" 
                   style={{ marginBottom: 1 }}
@@ -406,7 +405,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
                   min={1} 
                   max={30} 
                   value={settings.speed} 
-                  onChange={(_e: any, value: any) => { setSettings({ ...settings, speed: Number(value) }); }} 
+                  onChange={(_e: Event, value: number | number[]) => { setSettings({ ...settings, speed: Number(value) }); }} 
                   className="slider" 
                   aria-labelledby="speed-slider" 
                   style={{ marginBottom: 1 }} 

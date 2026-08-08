@@ -1,8 +1,8 @@
 "use client";
 
-import { Button, IconButton, Typography, Snackbar, Alert, CircularProgress, Fade, Tooltip, Drawer, MenuItem, Select, InputLabel, FormControl, Menu, Backdrop, Stepper, Step, StepLabel } from "@mui/material";
+import { Button, IconButton, Typography, Tooltip, MenuItem, Select, InputLabel, FormControl, Menu, Dialog, DialogTitle, DialogContent, Tabs, Tab, Box, Grid } from "@mui/material";
 import { MuiColorInput } from "mui-color-input";
-import { PlayArrow, Settings, Movie, Pause, Replay } from "@mui/icons-material";
+import { PlayArrow, Settings, Movie, Pause, Replay, Close } from "@mui/icons-material";
 import Slider from "./Slider";
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { INITIAL_COLORS, LOCATIONS } from "../config";
@@ -50,8 +50,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
     message: "",
     type: "error",
   });
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
+  const [tabIndex, setTabIndex] = useState(0);
   const [helper, setHelper] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<any>(null);
   const menuOpen = Boolean(menuAnchor);
@@ -73,14 +72,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
     setHelper(false);
   }
 
-  function handleTutorialChange(direction: number) {
-    if (activeStep >= 2 && direction > 0) {
-      setShowTutorial(false);
-      return;
-    }
-
-    setActiveStep(Math.max(activeStep + direction, 0));
-  }
+  // Tutorial handlers removed
 
   function handlePlay() {
     if (!canStart) return;
@@ -130,12 +122,7 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
     }, 200);
   }, [cinematic]);
 
-  useEffect(() => {
-    if (localStorage.getItem("path_sawtutorial")) return;
-    console.log("[GeoPath] Showing tutorial for first time");
-    setShowTutorial(true);
-    localStorage.setItem("path_sawtutorial", "true");
-  }, []);
+  // Initial tutorial presentation removed
 
   return (
     <>
@@ -221,262 +208,273 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         </Button>
       </div> */}
 
-      {/* Tutorial backdrop - commented out for UI simplification */}
-      {/* <Backdrop
-        open={showTutorial}
-         onClick={(e) => { if ((e.target as HTMLElement).classList.contains("backdrop")) setShowTutorial(false); }}
-        className="backdrop"
-      >
-        <div className="tutorial-container">
-          <Stepper activeStep={activeStep}>
-            <Step>
-              <StepLabel>Basic controls</StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>Playback controls</StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>Changing settings</StepLabel>
-            </Step>
-          </Stepper>
-          <div className="content">
-            <h1>Map Pathfinding Visualizer</h1>
-            {activeStep === 0 && <div>
-              <p>
-                <b>Controls:</b> <br />
-                <b>Left button:</b> Place start node <br />
-                <b>Right button:</b> Place end node <br />
-              </p>
-              <p>The end node must be placed within the shown radius.</p>
-            </div>}
-            {activeStep === 1 && <div>
-              <p>
-                To start the visualization, press the <b>Start Button</b> or press <b>Space</b>.<br />
-                A playback feature is available after the algorithm ends.
-              </p>
-            </div>}
-            {activeStep === 2 && <div>
-              <p>
-                You can customize the settings of the animation in the <b>Settings Sidebar</b>. <br />
-                Try to keep the area radius only as large as you need it to be. <br />
-                Anything above <b>10km</b> is considered experimental, if you run into performance issues, stop the animation and clear the path.
-              </p>
-            </div>}
-          </div>
-          <div className="controls">
-            <Button onClick={() => { setShowTutorial(false); }}
-              className="close" variant="outlined" style={{ borderColor: "#9f9f9f", color: "#9f9f9f", paddingInline: 15 }}
-            >
-              Close
-            </Button>
-            <Button onClick={() => { handleTutorialChange(-1); }}
-              variant="outlined" style={{ borderColor: "#9f9f9f", color: "#9f9f9f", paddingInline: 18 }}
-            >
-              Back
-            </Button>
-            <Button onClick={() => { handleTutorialChange(1); }}
-              variant="contained" style={{ backgroundColor: "#46B780", color: "#fff", paddingInline: 30, fontWeight: "bold" }}
-            >
-              {activeStep >= 2 ? "Finish" : "Next"}
-            </Button>
-          </div>
-        </div>
-      </Backdrop> */}
-
-      {/* Settings drawer */}
-      <Drawer
-        className={`side-drawer ${cinematic ? "cinematic" : ""}`}
-        anchor="left"
+      <Dialog
         open={sidebar}
         onClose={() => { setSidebar(false); }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: "#1F2029",
+            backgroundImage: "none",
+            borderRadius: "16px",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "#fff",
+            padding: "8px",
+          }
+        }}
       >
-        <div className="sidebar-container">
+        <DialogTitle sx={{ m: 0, p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h6" component="div" sx={{ fontWeight: "bold", letterSpacing: "0.5px" }}>
+            Configuration Panel
+          </Typography>
+          <IconButton
+            onClick={() => { setSidebar(false); }}
+            sx={{ color: "rgba(255, 255, 255, 0.7)", "&:hover": { color: "#fff" } }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        
+        <Box sx={{ borderBottom: 1, borderColor: "rgba(255, 255, 255, 0.1)", px: 2 }}>
+          <Tabs
+            value={tabIndex}
+            onChange={(_e, v) => setTabIndex(v)}
+            textColor="inherit"
+            indicatorColor="primary"
+            sx={{
+              "& .MuiTabs-indicator": {
+                backgroundColor: "#46B780",
+              },
+              "& .MuiTab-root": {
+                minWidth: "auto",
+                fontWeight: "medium",
+                mr: 2,
+                px: 1,
+                py: 1.5,
+                color: "rgba(255, 255, 255, 0.6)",
+                "&.Mui-selected": {
+                  color: "#46B780",
+                }
+              }
+            }}
+          >
+            <Tab label="General" />
+            <Tab label="Styles & Colors" />
+            <Tab label="Shortcuts" />
+          </Tabs>
+        </Box>
 
-          <FormControl variant="filled">
-            <InputLabel style={{ fontSize: 14 }} id="algo-select">Algorithm</InputLabel>
-            <Select
-              labelId="algo-select"
-              value={settings.algorithm}
-              onChange={(e) => { changeAlgorithm(e.target.value); }}
-              required
-              style={{ backgroundColor: "#404156", color: "#fff", width: "100%", paddingLeft: 1 }}
-              inputProps={{ MenuProps: { MenuListProps: { sx: { backgroundColor: "#404156" } } } }}
-              size="small"
-              disabled={!animationEnded && started}
-            >
-              <MenuItem value={"astar"}>A* algorithm</MenuItem>
-              <MenuItem value={"greedy"}>Greedy algorithm</MenuItem>
-              <MenuItem value={"dijkstra"}>Dijkstra&apos;s algorithm</MenuItem>
-              <MenuItem value={"bidirectional"}>Bidirectional Search algorithm</MenuItem>
-            </Select>
-          </FormControl>
+        <DialogContent sx={{ p: 3, minHeight: "340px" }}>
+          {tabIndex === 0 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={6}>
+                  <FormControl variant="filled" sx={{ width: "100%" }}>
+                    <InputLabel style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: 13 }} id="algo-select">Algorithm</InputLabel>
+                    <Select
+                      labelId="algo-select"
+                      value={settings.algorithm}
+                      onChange={(e) => { changeAlgorithm(e.target.value); }}
+                      required
+                      sx={{ 
+                        backgroundColor: "#2A2B37", 
+                        color: "#fff", 
+                        borderRadius: "8px",
+                        "&:hover": { backgroundColor: "#323342" },
+                        "&.MuiFilledInput-root": {
+                          backgroundColor: "#2A2B37",
+                          "&:before, &:after": { display: "none" }
+                        }
+                      }}
+                      inputProps={{ MenuProps: { MenuListProps: { sx: { backgroundColor: "#2A2B37", color: "#fff" } } } }}
+                      size="small"
+                      disabled={!animationEnded && started}
+                    >
+                      <MenuItem value={"astar"}>A* algorithm</MenuItem>
+                      <MenuItem value={"greedy"}>Greedy algorithm</MenuItem>
+                      <MenuItem value={"dijkstra"}>Dijkstra's algorithm</MenuItem>
+                      <MenuItem value={"bidirectional"}>Bidirectional Search</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    id="locations-button"
+                    aria-controls={menuOpen ? "locations-menu" : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={menuOpen ? "true" : undefined}
+                    onClick={(e) => { setMenuAnchor(e.currentTarget); }}
+                    variant="contained"
+                    disableElevation
+                    sx={{ 
+                      backgroundColor: "#2A2B37", 
+                      color: "#fff", 
+                      textTransform: "none", 
+                      fontSize: 14, 
+                      py: 1.5, 
+                      borderRadius: "8px",
+                      width: "100%",
+                      justifyContent: "center",
+                      "&:hover": { backgroundColor: "#323342" }
+                    }}
+                  >
+                    Quick Locations
+                  </Button>
+                  <Menu
+                    id="locations-menu"
+                    anchorEl={menuAnchor}
+                    open={menuOpen}
+                    onClose={() => { setMenuAnchor(null); }}
+                    MenuListProps={{
+                      "aria-labelledby": "locations-button",
+                      sx: {
+                        backgroundColor: "#2A2B37",
+                        color: "#fff",
+                      },
+                    }}
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "center",
+                    }}
+                    transformOrigin={{
+                      vertical: "top",
+                      horizontal: "center",
+                    }}
+                  >
+                    {LOCATIONS.map((location) =>
+                      <MenuItem 
+                        key={location.name} 
+                        onClick={() => {
+                          closeMenu();
+                          changeLocation(location);
+                        }}
+                        sx={{ "&:hover": { backgroundColor: "#323342" } }}
+                      >
+                        {location.name}
+                      </MenuItem>
+                    )}
+                  </Menu>
+                </Grid>
+              </Grid>
 
-          <div>
-            <Button
-              id="locations-button"
-              aria-controls={menuOpen ? "locations-menu" : undefined}
-              aria-haspopup="true"
-              aria-expanded={menuOpen ? "true" : undefined}
-              onClick={(e) => { setMenuAnchor(e.currentTarget); }}
-              variant="contained"
-              disableElevation
-              style={{ backgroundColor: "#404156", color: "#fff", textTransform: "none", fontSize: 16, paddingBlock: 8, justifyContent: "start" }}
-            >
-              Locations
-            </Button>
-            <Menu
-              id="locations-menu"
-              anchorEl={menuAnchor}
-              open={menuOpen}
-              onClose={() => { setMenuAnchor(null); }}
-              MenuListProps={{
-                "aria-labelledby": "locations-button",
-                sx: {
-                  backgroundColor: "#404156",
-                },
-              }}
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-            >
-              {LOCATIONS.map((location) =>
-                <MenuItem key={location.name} onClick={() => {
-                  closeMenu();
-                  changeLocation(location);
-                }}>{location.name}</MenuItem>
-              )}
-            </Menu>
-          </div>
-
-          <div className="side slider-container">
-            <Typography id="area-slider" >
-              Area radius: {settings.radius}km ({((settings.radius / 1.609)).toFixed(1)}mi)
-            </Typography>
-            <Slider disabled={started && !animationEnded} min={2} max={20} step={1} value={settings.radius} onChangeCommited={() => { changeRadius(settings.radius); }} onChange={(_e: any, value: any) => { setSettings({ ...settings, radius: Number(value) }); }} className="slider" aria-labelledby="area-slider" style={{ marginBottom: 1 }}
-              marks={[
-                {
-                  value: 2,
-                  label: "2km",
-                },
-                {
-                  value: 20,
-                  label: "20km",
-                },
-              ]}
-            />
-          </div>
-
-          <div className="side slider-container">
-            <Typography id="speed-slider" >
-              Animation speed
-            </Typography>
-            <Slider min={1} max={30} value={settings.speed} onChange={(_e: any, value: any) => { setSettings({ ...settings, speed: Number(value) }); }} className="slider" aria-labelledby="speed-slider" style={{ marginBottom: 1 }} />
-          </div>
-
-          <div className="styles-container">
-            <Typography style={{ color: "#A8AFB3", textTransform: "uppercase", fontSize: 14 }} >
-              Styles
-            </Typography>
-
-              <div>
-                <Typography id="start-fill-label" >
-                  Start node fill color
+              <Box sx={{ mt: 1 }}>
+                <Typography id="area-slider" sx={{ mb: 1, color: "rgba(255, 255, 255, 0.8)", fontSize: "14px" }}>
+                  Area radius: <b>{settings.radius}km</b> ({((settings.radius / 1.609)).toFixed(1)}mi)
                 </Typography>
-                <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.startNodeFill)} onChange={v => {setColors({...colors, startNodeFill: rgbToArray(v)});}} aria-labelledby="start-fill-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, startNodeFill: INITIAL_COLORS.startNodeFill});}} style={{ backgroundColor: "transparent" }} size="small">
-                    <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
-                  </IconButton>
-                </div>
-              </div>
+                <Slider 
+                  disabled={started && !animationEnded} 
+                  min={2} 
+                  max={20} 
+                  step={1} 
+                  value={settings.radius} 
+                  onChangeCommited={() => { changeRadius(settings.radius); }} 
+                  onChange={(_e: any, value: any) => { setSettings({ ...settings, radius: Number(value) }); }} 
+                  className="slider" 
+                  aria-labelledby="area-slider" 
+                  style={{ marginBottom: 1 }}
+                  marks={[
+                    { value: 2, label: "2km" },
+                    { value: 20, label: "20km" },
+                  ]}
+                />
+              </Box>
 
-              <div>
-                <Typography id="start-border-label" >
-                  Start node border color
+              <Box sx={{ mt: 1 }}>
+                <Typography id="speed-slider" sx={{ mb: 1, color: "rgba(255, 255, 255, 0.8)", fontSize: "14px" }}>
+                  Animation speed
                 </Typography>
-                <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.startNodeBorder)} onChange={v => {setColors({...colors, startNodeBorder: rgbToArray(v)});}} aria-labelledby="start-border-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, startNodeBorder: INITIAL_COLORS.startNodeBorder});}} style={{ backgroundColor: "transparent" }} size="small">
-                    <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
-                  </IconButton>
-                </div>
-              </div>
+                <Slider 
+                  min={1} 
+                  max={30} 
+                  value={settings.speed} 
+                  onChange={(_e: any, value: any) => { setSettings({ ...settings, speed: Number(value) }); }} 
+                  className="slider" 
+                  aria-labelledby="speed-slider" 
+                  style={{ marginBottom: 1 }} 
+                />
+              </Box>
+            </Box>
+          )}
 
-              <div>
-                <Typography id="end-fill-label" >
-                  End node fill color
-                </Typography>
-                <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.endNodeFill)} onChange={v => {setColors({...colors, endNodeFill: rgbToArray(v)});}} aria-labelledby="end-fill-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, endNodeFill: INITIAL_COLORS.endNodeFill});}} style={{ backgroundColor: "transparent" }} size="small">
-                    <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
-                  </IconButton>
-                </div>
-              </div>
+          {tabIndex === 1 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <Grid container spacing={2}>
+                {[
+                  { id: "start-fill-label", label: "Start node fill", value: colors.startNodeFill, key: "startNodeFill", init: INITIAL_COLORS.startNodeFill },
+                  { id: "start-border-label", label: "Start node border", value: colors.startNodeBorder, key: "startNodeBorder", init: INITIAL_COLORS.startNodeBorder },
+                  { id: "end-fill-label", label: "End node fill", value: colors.endNodeFill, key: "endNodeFill", init: INITIAL_COLORS.endNodeFill },
+                  { id: "end-border-label", label: "End node border", value: colors.endNodeBorder, key: "endNodeBorder", init: INITIAL_COLORS.endNodeBorder },
+                  { id: "path-label", label: "Explored path color", value: colors.explored, key: "explored", init: INITIAL_COLORS.explored },
+                  { id: "route-label", label: "Shortest route color", value: colors.finalPath, key: "finalPath", init: INITIAL_COLORS.finalPath },
+                ].map((item) => (
+                  <Grid item xs={12} sm={6} key={item.key}>
+                    <Typography id={item.id} sx={{ mb: 0.5, fontSize: "13px", color: "rgba(255, 255, 255, 0.7)" }}>
+                      {item.label}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                      <MuiColorInput 
+                        value={arrayToRgb(item.value)} 
+                        onChange={v => {setColors({...colors, [item.key]: rgbToArray(v)});}} 
+                        aria-labelledby={item.id} 
+                        sx={{ 
+                          backgroundColor: "#2A2B37",
+                          borderRadius: "6px",
+                          width: "100%",
+                          "& .MuiOutlinedInput-root": {
+                            "& fieldset": { border: "none" }
+                          }
+                        }} 
+                      />
+                      <IconButton 
+                        onClick={() => {setColors({...colors, [item.key]: item.init});}} 
+                        sx={{ backgroundColor: "#2A2B37", borderRadius: "6px", p: 1.25, "&:hover": { backgroundColor: "#323342" } }} 
+                        size="small"
+                      >
+                        <Replay sx={{ color: "#fff", width: 18, height: 18 }} />
+                      </IconButton>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
 
-              <div>
-                <Typography id="end-border-label" >
-                  End node border color
-                </Typography>
-                <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.endNodeBorder)} onChange={v => {setColors({...colors, endNodeBorder: rgbToArray(v)});}} aria-labelledby="end-border-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, endNodeBorder: INITIAL_COLORS.endNodeBorder});}} style={{ backgroundColor: "transparent" }} size="small">
-                    <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
-                  </IconButton>
-                </div>
-              </div>
-
-              <div>
-                <Typography id="path-label" >
-                  Explored path color
-                </Typography>
-                <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.explored)} onChange={v => {setColors({...colors, explored: rgbToArray(v)});}} aria-labelledby="path-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, explored: INITIAL_COLORS.explored});}} style={{ backgroundColor: "transparent" }} size="small">
-                    <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
-                  </IconButton>
-                </div>
-              </div>
-
-              <div>
-                <Typography id="route-label" >
-                  Shortest route color
-                </Typography>
-                <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.finalPath)} onChange={v => {setColors({...colors, finalPath: rgbToArray(v)});}} aria-labelledby="route-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, finalPath: INITIAL_COLORS.finalPath});}} style={{ backgroundColor: "transparent" }} size="small">
-                    <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
-                  </IconButton>
-                </div>
-              </div>
-          </div>
-
-          <div className="shortcuts-container">
-            <Typography style={{ color: "#A8AFB3", textTransform: "uppercase", fontSize: 14 }} >
-              Shortcuts
-            </Typography>
-
-            <div className="shortcut">
-              <p>SPACE</p>
-              <p>Start/Stop animation</p>
-            </div>
-            <div className="shortcut">
-              <p>R</p>
-              <p>Clear path</p>
-            </div>
-            <div className="shortcut">
-              <p>Arrows</p>
-              <p>Animation playback</p>
-            </div>
-            <Button onClick={() => { setActiveStep(0); setShowTutorial(true); }}
-              variant="contained" style={{ backgroundColor: "#404156", color: "#fff" }}
-            >
-              Show tutorial
-            </Button>
-          </div>
-        </div>
-      </Drawer>
+          {tabIndex === 2 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              <Typography sx={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "13px", mb: 1, textTransform: "uppercase", letterSpacing: "1px" }}>
+                Keyboard Shortcuts
+              </Typography>
+              {[
+                { keys: "Space", desc: "Start/Stop animation simulation" },
+                { keys: "R", desc: "Clear path & reset visualizer" },
+                { keys: "Left / Right Arrows", desc: "Step backward / forward in playback timeline" },
+                { keys: "Escape", desc: "Exit cinematic view mode" }
+              ].map((shortcut, index) => (
+                <Box 
+                  key={index} 
+                  sx={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center", 
+                    py: 1.25, 
+                    px: 2, 
+                    backgroundColor: "#2A2B37", 
+                    borderRadius: "8px" 
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#46B780", fontWeight: "bold" }}>
+                    {shortcut.keys}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
+                    {shortcut.desc}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* GitHub ribbon - removed for UI simplification */}
       {/* <a href="https://github.com/honzaap/Pathfinding" aria-label="GitHub repository" target="_blank" className={`github-corner ${cinematic ? "cinematic" : ""}`}>

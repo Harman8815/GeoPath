@@ -53,7 +53,87 @@ export interface GraphData {
 
 // Pathfinding Types
 
-export type AlgorithmType = 'astar' | 'dijkstra' | 'greedy' | 'bidirectional';
+export type AlgorithmType = 'astar' | 'dijkstra' | 'greedy' | 'bidirectional' | 'bfs' | 'dfs' | 'bellman-ford' | 'floyd-warshall' | 'kruskal' | 'prim' | 'topological-sort';
+
+export type HeuristicType = 'manhattan' | 'euclidean' | 'octile';
+
+export type CellType = 'empty' | 'wall' | 'weight' | 'start' | 'target' | 'visited' | 'visiting' | 'path';
+
+export interface GridNode {
+  row: number;
+  col: number;
+  type: CellType;
+  distance: number;
+  heuristic: number;
+  totalCost: number;
+  isVisited: boolean;
+  previousNode: GridNode | null;
+  weight: number;
+}
+
+export interface AlgorithmInfo {
+  id: AlgorithmType;
+  name: string;
+  tagline: string;
+  description: string;
+  timeComplexity: string;
+  spaceComplexity: string;
+  guaranteesShortestPath: boolean;
+  supportsWeights: boolean;
+  usesHeuristic: boolean;
+  color: string;
+  badge: string;
+  useCases: string[];
+}
+
+export type ProgrammingLanguage = 'python' | 'javascript' | 'cpp' | 'java' | 'rust';
+
+export interface MemoryLogStep {
+  step: number;
+  action: string;
+  details: string;
+  memoryCellState: {
+    queueSize: number;
+    visitedCount: number;
+    currentWorkingNode?: string;
+    distanceUpdate?: string;
+    heapState?: string[];
+  };
+  timestampMs: number;
+}
+
+export interface DetailedAlgorithm extends AlgorithmInfo {
+  category: 'Shortest Path' | 'Graph Traversal' | 'Minimum Spanning Tree' | 'Ordering & DAG';
+  overview: string;
+  codeSnippets: Record<ProgrammingLanguage, string>;
+  pseudocode: string[];
+  mathFormulas: {
+    title: string;
+    latexRepresentation: string;
+    explanation: string;
+  }[];
+  flowchartNodes: {
+    id: string;
+    label: string;
+    type: 'start' | 'process' | 'decision' | 'end';
+  }[];
+}
+
+export interface SimulationStats {
+  visitedNodesCount: number;
+  pathLength: number;
+  pathCost: number;
+  executionTimeMs: number;
+  status: 'idle' | 'running' | 'completed' | 'no-path';
+}
+
+export interface ComparisonResult {
+  algorithm: AlgorithmType;
+  visitedNodesCount: number;
+  pathLength: number;
+  pathCost: number;
+  executionTimeMs: number;
+}
 
 export interface PathfindingResult {
   path: number[];

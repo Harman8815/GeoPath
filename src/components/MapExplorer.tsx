@@ -1,22 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Settings,
   Play,
   RotateCcw,
   X,
-  Compass,
-  MapPin,
-  Navigation,
-  Sparkles,
-  Layers,
-  Zap,
-  Sliders,
   Check,
-  AlertTriangle,
-  Info,
-  SlidersHorizontal,
-  Command,
-  Globe
+  Zap
 } from 'lucide-react';
 import L from 'leaflet';
 
@@ -63,6 +52,20 @@ const LOCATION_PRESETS = [
   }
 ];
 
+const getTileLayerUrl = (style: string) => {
+  switch (style) {
+    case 'midnight':
+      return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    case 'cyber':
+      return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    case 'contrast':
+      return 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    case 'dark':
+    default:
+      return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  }
+};
+
 export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -76,8 +79,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
   const [algorithm, setAlgorithm] = useState<string>('dijkstra');
   const [areaRadiusKm, setAreaRadiusKm] = useState<number>(4); // 2km - 20km
   const [animationSpeed, setAnimationSpeed] = useState<number>(5); // 1 - 10
-  const [tileStyle, setTileStyle] = useState<'dark' | 'midnight' | 'cyber' | 'contrast'>('dark');
-  const [routeColor, setRouteColor] = useState<string>('#10b981'); // Emerald green default
+  const [tileStyle, setTileStyle] = useState<'dark' | 'midnight' | 'cyber' | 'contrast'>('dark');  const [routeColor, setRouteColor] = useState<string>('#10b981'); // Emerald green default
 
   // Route & Graph States
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
@@ -98,6 +100,17 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
   // Markers and Layers Refs
   const startMarkerRef = useRef<L.Marker | null>(null);
   const targetMarkerRef = useRef<L.Marker | null>(null);
+  const selectedLocationRef = useRef(selectedLocation);
+  const tileStyleRef = useRef(tileStyle);
+
+  useEffect(() => {
+    selectedLocationRef.current = selectedLocation;
+  }, [selectedLocation]);
+
+  useEffect(() => {
+    tileStyleRef.current = tileStyle;
+  }, [tileStyle]);
+
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const visitedCirclesRef = useRef<L.CircleMarker[]>([]);
@@ -107,22 +120,68 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
   const [startPos, setStartPos] = useState<[number, number]>([28.69, 77.21]);
   const [targetPos, setTargetPos] = useState<[number, number]>([28.65, 77.27]);
 
+  const updateLandmarksOnMap = useCallback((map: L.Map, location: typeof LOCATION_PRESETS[0]) => {
+    landmarkMarkersRef.current.forEach((m) => map.removeLayer(m));
+    landmarkMarkersRef.current = [];
+
+    const offsets = [
+      [0.012, -0.015],
+      [0.022, 0.018],
+      [-0.018, -0.02],
+      [-0.025, 0.025],
+      [-0.008, 0.005],
+      [0.005, -0.025]
+    ];
+
+    location.landmarks.forEach((name, idx) => {
+      const offset = offsets[idx % offsets.length];
+      const lat = location.lat + offset[0];
+      const lng = location.lng + offset[1];
+
+      const landmarkIcon = L.divIcon({
+        className: 'landmark-tag',
+        html: `
+          <div style="
+            background: rgba(22, 25, 31, 0.88);
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+          ">
+            ${name}
+          </div>
+        `,
+        iconSize: [80, 20],
+        iconAnchor: [40, 10]
+      });
+
+      const marker = L.marker([lat, lng], { icon: landmarkIcon, interactive: false }).addTo(map);
+      landmarkMarkersRef.current.push(marker);
+    });
+  }, []);
+
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [selectedLocation.lat, selectedLocation.lng],
-      zoom: selectedLocation.zoom,
+      center: [selectedLocationRef.current.lat, selectedLocationRef.current.lng],
+      zoom: selectedLocationRef.current.zoom,
       zoomControl: false,
       attributionControl: false
     });
 
     mapInstanceRef.current = map;
 
-    // Dark CARTO tile layer URL
-    const tileUrl = getTileLayerUrl(tileStyle);
+    const tileUrl = getTileLayerUrl(tileStyleRef.current);
     const tileLayer = L.tileLayer(tileUrl, {
       maxZoom: 19,
       subdomains: 'abcd'
@@ -192,13 +251,14 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
     targetMarkerRef.current = targetMarker;
 
     // Add initial landmark markers
-    updateLandmarksOnMap(map, selectedLocation);
+    updateLandmarksOnMap(map, selectedLocationRef.current);
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateLandmarksOnMap]);
 
   // Tile layer style change handler
   useEffect(() => {
@@ -228,69 +288,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
       clearRoutesAndNodes();
       updateLandmarksOnMap(mapInstanceRef.current, location);
     }
-  };
-
-  const getTileLayerUrl = (style: string) => {
-    switch (style) {
-      case 'midnight':
-        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      case 'cyber':
-        return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-      case 'contrast':
-        return 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-      case 'dark':
-      default:
-        return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-    }
-  };
-
-  const updateLandmarksOnMap = (map: L.Map, location: typeof LOCATION_PRESETS[0]) => {
-    // Clear old landmark markers
-    landmarkMarkersRef.current.forEach((m) => map.removeLayer(m));
-    landmarkMarkersRef.current = [];
-
-    // Offsets for visual text tags
-    const offsets = [
-      [0.012, -0.015],
-      [0.022, 0.018],
-      [-0.018, -0.02],
-      [-0.025, 0.025],
-      [-0.008, 0.005],
-      [0.005, -0.025]
-    ];
-
-    location.landmarks.forEach((name, idx) => {
-      const offset = offsets[idx % offsets.length];
-      const lat = location.lat + offset[0];
-      const lng = location.lng + offset[1];
-
-      const landmarkIcon = L.divIcon({
-        className: 'landmark-tag',
-        html: `
-          <div style="
-            background: rgba(22, 25, 31, 0.88);
-            color: #94a3b8;
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            white-space: nowrap;
-            pointer-events: none;
-            backdrop-filter: blur(4px);
-          ">
-            ${name}
-          </div>
-        `,
-        iconSize: [80, 20],
-        iconAnchor: [40, 10]
-      });
-
-      const marker = L.marker([lat, lng], { icon: landmarkIcon, interactive: false }).addTo(map);
-      landmarkMarkersRef.current.push(marker);
-    });
   };
 
   const clearRoutesAndNodes = () => {
@@ -539,7 +536,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
                         className="w-full h-11 bg-[#121417] border border-zinc-700 rounded-xl px-3 text-slate-100 font-medium text-xs focus:outline-none focus:border-emerald-400 cursor-pointer"
                         id="modal-algorithm-select"
                       >
-                        <option value="dijkstra">Dijkstra's algorithm</option>
+                        <option value="dijkstra">Dijkstra&apos;s algorithm</option>
                         <option value="astar">A* algorithm (Heuristic)</option>
                         <option value="bfs">Breadth-First Search (BFS)</option>
                         <option value="dfs">Depth-First Search (DFS)</option>
@@ -636,7 +633,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
                       ].map((t) => (
                         <button
                           key={t.id}
-                          onClick={() => setTileStyle(t.id as any)}
+                          onClick={() => setTileStyle(t.id as 'dark' | 'midnight' | 'cyber' | 'contrast')}
                           className={`p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                             tileStyle === t.id
                               ? 'bg-slate-800 text-emerald-400 border-emerald-400/80 shadow'

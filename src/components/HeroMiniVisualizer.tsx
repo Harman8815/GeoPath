@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw, Sparkles, MapPin, Navigation, Zap, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Play } from 'lucide-react';
 import { AlgorithmType, GridNode } from '../types';
 import { createGrid, executeAlgorithm, generateRandomWalls, generateWeightedSwamps } from '../utils/pathfinding';
 
@@ -13,17 +13,11 @@ export const HeroMiniVisualizer: React.FC<{ onOpenFullVisualizer: () => void }> 
   const [stats, setStats] = useState<{ visited: number; length: number; time: number } | null>(null);
   const [activePreset, setActivePreset] = useState<'default' | 'city' | 'swamp'>('city');
 
-  const startPos = { row: 2, col: 2 };
-  const targetPos = { row: 7, col: 17 };
+  const startPos = useMemo(() => ({ row: 2, col: 2 }), []);
+  const targetPos = useMemo(() => ({ row: 7, col: 17 }), []);
 
-  // Init grid on mount
-  useEffect(() => {
-    initDefaultCityGrid();
-  }, []);
-
-  const initDefaultCityGrid = () => {
+  const initDefaultCityGrid = useCallback(() => {
     const newGrid = createGrid(ROWS, COLS, startPos, targetPos);
-    // Add sleek city building blocks
     const walls = [
       [2, 6], [3, 6], [4, 6], [5, 6], [6, 6],
       [1, 12], [2, 12], [3, 12], [4, 12], [5, 12],
@@ -38,7 +32,13 @@ export const HeroMiniVisualizer: React.FC<{ onOpenFullVisualizer: () => void }> 
     setGrid(newGrid);
     setStats(null);
     setActivePreset('city');
-  };
+  }, [startPos, targetPos]);
+
+  // Init grid on mount
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    initDefaultCityGrid();
+  }, [initDefaultCityGrid]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isRunning) return;
@@ -218,19 +218,15 @@ export const HeroMiniVisualizer: React.FC<{ onOpenFullVisualizer: () => void }> 
             {grid.map((row, rIdx) =>
               row.map((node, cIdx) => {
                 let bgClass = 'bg-[#121417] border-zinc-800/80 hover:bg-[#22252c]';
-                let content = null;
 
                 if (node.type === 'start') {
                   bgClass = 'bg-emerald-500 text-slate-950 shadow-sm border-emerald-400 scale-105 z-10';
-                  content = <MapPin className="w-2.5 h-2.5 text-slate-950 stroke-[3]" />;
                 } else if (node.type === 'target') {
                   bgClass = 'bg-rose-500 text-white shadow-sm border-rose-400 scale-105 z-10';
-                  content = <Navigation className="w-2.5 h-2.5 text-white stroke-[3]" />;
                 } else if (node.type === 'wall') {
                   bgClass = 'bg-[#2a2d36] border-zinc-700/80 rounded-sm shadow-inner';
                 } else if (node.type === 'weight') {
                   bgClass = 'bg-amber-950/70 border-amber-800/60 text-amber-400';
-                  content = <span className="text-[8px] font-bold">5x</span>;
                 } else if (node.type === 'visited') {
                   bgClass = 'bg-[#22252c] border-zinc-700/50 animate-pulse';
                 } else if (node.type === 'path') {

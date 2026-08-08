@@ -23,6 +23,8 @@ interface InterfaceProps {
     endNodeBorder: number[];
     path: number[];
     route: number[];
+    explored: number[];
+    finalPath: number[];
   };
   loading: boolean;
   timeChanged: (time: number) => void;
@@ -427,11 +429,11 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
 
               <div>
                 <Typography id="path-label" >
-                  Path color
+                  Explored path color
                 </Typography>
                 <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.path)} onChange={v => {setColors({...colors, path: rgbToArray(v)});}} aria-labelledby="path-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, path: INITIAL_COLORS.path});}} style={{ backgroundColor: "transparent" }} size="small">
+                  <MuiColorInput value={arrayToRgb(colors.explored)} onChange={v => {setColors({...colors, explored: rgbToArray(v)});}} aria-labelledby="path-label" style={{ backgroundColor: "#404156" }} />
+                  <IconButton onClick={() => {setColors({...colors, explored: INITIAL_COLORS.explored});}} style={{ backgroundColor: "transparent" }} size="small">
                     <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
                   </IconButton>
                 </div>
@@ -442,8 +444,8 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
                   Shortest route color
                 </Typography>
                 <div className="color-container">
-                  <MuiColorInput value={arrayToRgb(colors.route)} onChange={v => {setColors({...colors, route: rgbToArray(v)});}} aria-labelledby="route-label" style={{ backgroundColor: "#404156" }} />
-                  <IconButton onClick={() => {setColors({...colors, route: INITIAL_COLORS.route});}} style={{ backgroundColor: "transparent" }} size="small">
+                  <MuiColorInput value={arrayToRgb(colors.finalPath)} onChange={v => {setColors({...colors, finalPath: rgbToArray(v)});}} aria-labelledby="route-label" style={{ backgroundColor: "#404156" }} />
+                  <IconButton onClick={() => {setColors({...colors, finalPath: INITIAL_COLORS.finalPath});}} style={{ backgroundColor: "transparent" }} size="small">
                     <Replay style={{ color: "#fff", width: 20, height: 20 }} fontSize="inherit" />
                   </IconButton>
                 </div>

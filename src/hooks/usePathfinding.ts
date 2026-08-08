@@ -52,7 +52,7 @@ export function usePathfinding() {
 
     // Reconstruct the final path by following parent pointers
     const path: number[] = [];
-    let currentNodeId = endNodeId;
+    let currentNodeId: number | null = endNodeId;
     const maxIterations = 10000; // Prevent infinite loops
     let iterations = 0;
 

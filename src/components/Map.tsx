@@ -259,7 +259,7 @@ export default function Map() {
       try {
         const items = JSON.parse(savedSettings);
         setSettings(items.settings);
-        setColors(items.colors);
+        setColors({ ...INITIAL_COLORS, ...items.colors });
       } catch (error) {
         console.error("[GeoPath] Error loading settings:", error);
       }

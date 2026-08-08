@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Sparkles, Cpu, Filter, Layers, ArrowRight, CheckCircle2, Clock, MemoryStick as Memory, Globe, BookOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Sparkles, Cpu, Filter, CheckCircle2, ArrowRight, BookOpen } from 'lucide-react';
 import { DETAILED_ALGORITHMS } from '../data/algorithmsData';
 
 interface AlgorithmCatalogProps {
@@ -7,28 +7,24 @@ interface AlgorithmCatalogProps {
   onOpenMap?: () => void;
 }
 
-export const AlgorithmCatalog: React.FC<AlgorithmCatalogProps> = ({ onSelectAlgorithm, onOpenMap }) => {
+export const AlgorithmCatalog: React.FC<AlgorithmCatalogProps> = ({ onSelectAlgorithm }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const categories = ['All', 'Shortest Path', 'Graph Traversal', 'Minimum Spanning Tree', 'Ordering & DAG'];
 
-  // Filter algorithms based on search query and category
-  const filteredAlgorithms = useMemo(() => {
-    return DETAILED_ALGORITHMS.filter((algo) => {
-      const matchesCategory = selectedCategory === 'All' || algo.category === selectedCategory;
-      const query = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        !query ||
-        algo.name.toLowerCase().includes(query) ||
-        algo.tagline.toLowerCase().includes(query) ||
-        algo.description.toLowerCase().includes(query) ||
-        algo.category.toLowerCase().includes(query) ||
-        algo.useCases.some((uc) => uc.toLowerCase().includes(query));
+  const filteredAlgorithms = DETAILED_ALGORITHMS.filter((algo) => {
+    const matchesCategory = selectedCategory === 'All' || algo.category === selectedCategory;
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !query ||
+      algo.name.toLowerCase().includes(query) ||
+      algo.tagline.toLowerCase().includes(query) ||
+      algo.description.toLowerCase().includes(query) ||
+      algo.category.toLowerCase().includes(query);
 
-      return matchesCategory && matchesSearch;
-    });
-  }, [searchQuery, selectedCategory]);
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="min-h-screen bg-[#121417] text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
@@ -185,7 +181,7 @@ export const AlgorithmCatalog: React.FC<AlgorithmCatalogProps> = ({ onSelectAlgo
         {filteredAlgorithms.length === 0 && (
           <div className="p-12 rounded-3xl bg-[#16181d] border border-zinc-800 text-center space-y-3">
             <Cpu className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-lg font-bold text-white">No algorithms found matching "{searchQuery}"</h3>
+            <h3 className="text-lg font-bold text-white">No algorithms found matching &quot;{searchQuery}&quot;</h3>
             <p className="text-xs text-slate-400">Try adjusting your search terms or choosing a different category filter.</p>
             <button
               onClick={() => {

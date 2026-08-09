@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={"  h-full antialiased"}
     >
-      <body className="m-0 h-full w-full overflow-hidden bg-[#111] p-0 text-white">
+      <body className="m-0 h-full w-full bg-[#111] p-0 text-white">
         {children}
       </body>
     </html>

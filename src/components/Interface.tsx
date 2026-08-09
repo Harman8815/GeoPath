@@ -162,17 +162,21 @@ const Interface = forwardRef<{ showSnack: (message: string, type?: "error" | "in
         transition: 'transform 500ms ease-out, opacity 300ms ease-in'
       }}>
         <Tooltip title={(!started || animationEnded && !playbackOn) ? "Start visualizer" : "Pause visualizer"}>
-          <IconButton disabled={!canStart} onClick={handlePlay} style={{ backgroundColor: "#46B780", width: 36, height: 36 }} size="large">
-            {(!started || animationEnded && !playbackOn)
-              ? <PlayArrow style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
-              : <Pause style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
-            }
-          </IconButton>
+          <span>
+            <IconButton disabled={!canStart} onClick={handlePlay} style={{ backgroundColor: "#46B780", width: 36, height: 36 }} size="large">
+              {(!started || animationEnded && !playbackOn)
+                ? <PlayArrow style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
+                : <Pause style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
+              }
+            </IconButton>
+          </span>
         </Tooltip>
         <Tooltip title="Reset visualizer">
-          <IconButton disabled={!animationEnded && started} onClick={clearPath} style={{ backgroundColor: "#404156", width: 36, height: 36 }} size="large">
-            <Replay style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
-          </IconButton>
+          <span>
+            <IconButton disabled={!animationEnded && started} onClick={clearPath} style={{ backgroundColor: "#404156", width: 36, height: 36 }} size="large">
+              <Replay style={{ color: "#fff", width: 22, height: 22 }} fontSize="inherit" />
+            </IconButton>
+          </span>
         </Tooltip>
       </div>
 

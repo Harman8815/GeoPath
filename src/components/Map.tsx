@@ -14,7 +14,7 @@ import { Graph } from "../models/Graph";
 import Interface from "./Interface";
 import { INITIAL_COLORS, INITIAL_VIEW_STATE, MAP_STYLE } from "../config";
 import { usePathfinding } from "../hooks/usePathfinding";
-import type { OverpassNode, MapSettings, ColorScheme, ViewState } from "../types";
+import type { OverpassNode, MapSettings, ColorScheme, ViewState, AlgorithmType } from "../types";
 
 export default function Map() {
   const [startNode, setStartNode] = useState<OverpassNode | null>(null);
@@ -217,7 +217,7 @@ export default function Map() {
 
   const handleAlgorithmChange = (algorithm: string) => {
     handleClearPath();
-    handleSettingsChange({ ...settings, algorithm });
+    handleSettingsChange({ ...settings, algorithm: algorithm as AlgorithmType });
   };
 
   const handleRadiusChange = (radius: number) => {
@@ -470,7 +470,7 @@ export default function Map() {
           />
           <MapGL
             reuseMaps
-            mapLib={maplibregl as unknown as typeof maplibregl}
+            mapLib={maplibregl as any}
             mapStyle={MAP_STYLE}
             doubleClickZoom={false}
             onLoad={() => console.log("[GeoPath] MapGL onLoad - map loaded successfully")}

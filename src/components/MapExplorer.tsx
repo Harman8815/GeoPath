@@ -5,12 +5,14 @@ import {
   RotateCcw,
   X,
   Check,
-  Zap
+  Zap,
+  Map
 } from 'lucide-react';
 import L from 'leaflet';
 
 export interface MapExplorerProps {
   onBackToHome?: () => void;
+  onOpenMap?: () => void;
 }
 
 // Preset locations
@@ -66,7 +68,7 @@ const getTileLayerUrl = (style: string) => {
   }
 };
 
-export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
+export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome, onOpenMap }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
@@ -410,6 +412,17 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onBackToHome }) => {
 
       {/* Top Left Controls: Gear Configuration Icon Button */}
       <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+        {onOpenMap && (
+          <button
+            onClick={onOpenMap}
+            className="px-3 h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md border border-emerald-300"
+            id="open-gis-map-btn"
+          >
+            <Map className="w-3.5 h-3.5 text-slate-950" />
+            GIS Map
+          </button>
+        )}
+
         <button
           onClick={() => setIsConfigOpen(true)}
           className="w-10 h-10 rounded-xl bg-[#181a1f]/90 border border-zinc-800 hover:bg-[#242730] text-slate-200 hover:text-white backdrop-blur-xl shadow-lg flex items-center justify-center transition-all cursor-pointer group"

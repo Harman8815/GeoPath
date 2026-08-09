@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Sparkles, Trophy, Zap, ShieldCheck, Scale, BarChart2, RefreshCw } from 'lucide-react';
+import { Sparkles, Trophy, Zap, ShieldCheck, Scale, BarChart2, RefreshCw, Map } from 'lucide-react';
 import { executeAlgorithm, createGrid, generateRandomWalls, generateWeightedSwamps } from '../utils/pathfinding';
 import { AlgorithmType, ComparisonResult } from '../types';
 
-export const BenchmarkSection: React.FC = () => {
+interface BenchmarkSectionProps {
+  onOpenMap: () => void;
+}
+
+export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({ onOpenMap }) => {
   const [results, setResults] = useState<ComparisonResult[]>([
     { algorithm: 'astar', visitedNodesCount: 38, pathLength: 22, pathCost: 22, executionTimeMs: 0.8 },
     { algorithm: 'dijkstra', visitedNodesCount: 124, pathLength: 22, pathCost: 22, executionTimeMs: 1.6 },
@@ -84,15 +88,25 @@ export const BenchmarkSection: React.FC = () => {
               </p>
             </div>
 
-            <button
-              onClick={runLiveBenchmark}
-              disabled={isBenchmarking}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-600/80 disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer shadow-md"
-              id="run-live-benchmark-btn"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isBenchmarking ? 'animate-spin' : ''}`} />
-              {isBenchmarking ? 'Evaluating...' : 'Re-Run Benchmark'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onOpenMap}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all border border-emerald-300 flex items-center gap-2 shadow-md"
+                id="benchmark-open-gis-map-btn"
+              >
+                <Map className="w-3.5 h-3.5 text-slate-950" />
+                Open GIS Map
+              </button>
+              <button
+                onClick={runLiveBenchmark}
+                disabled={isBenchmarking}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-600/80 disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                id="run-live-benchmark-btn"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isBenchmarking ? 'animate-spin' : ''}`} />
+                {isBenchmarking ? 'Evaluating...' : 'Re-Run Benchmark'}
+              </button>
+            </div>
           </div>
 
           {/* Bar Chart Representation */}

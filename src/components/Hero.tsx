@@ -1,13 +1,14 @@
 import React from 'react';
-import { Play, ArrowRight, Cpu, Sparkles, Route, Zap, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Play, ArrowRight, Cpu, Sparkles, Route, Zap, CheckCircle2, ShieldCheck, Map } from 'lucide-react';
 import { HeroMiniVisualizer } from './HeroMiniVisualizer';
 
 interface HeroProps {
   onOpenVisualizer: () => void;
+  onOpenMap: () => void;
   onNavigateSection: (sectionId: string) => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onOpenVisualizer, onNavigateSection }) => {
+export const Hero: React.FC<HeroProps> = ({ onOpenVisualizer, onOpenMap, onNavigateSection }) => {
   return (
     <section className="relative pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden">
       {/* Background Radial Glow */}
@@ -49,6 +50,15 @@ export const Hero: React.FC<HeroProps> = ({ onOpenVisualizer, onNavigateSection 
               >
                 <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
                 Explore GeoPath Visualizer
+              </button>
+
+              <button
+                onClick={onOpenMap}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl text-sm font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 active:scale-95 transition-all border border-emerald-300 shadow-md flex items-center justify-center gap-2.5 cursor-pointer group"
+                id="hero-open-gis-map-btn"
+              >
+                <Map className="w-4 h-4 text-slate-950 group-hover:scale-110 transition-transform" />
+                Open GIS Map
               </button>
 
               <button

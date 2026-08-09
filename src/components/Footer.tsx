@@ -4,9 +4,10 @@ import { Route, Heart, Command, Cpu, Compass } from 'lucide-react';
 interface FooterProps {
   onNavigateSection: (sectionId: string) => void;
   onOpenVisualizer: () => void;
+  onOpenMap: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigateSection, onOpenVisualizer }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigateSection, onOpenVisualizer, onOpenMap }) => {
   return (
     <footer className="relative bg-[#121417] border-t border-zinc-800 pt-16 pb-12 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -79,6 +80,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateSection, onOpenVisuali
                   className="text-slate-300 hover:text-white font-semibold transition-colors"
                 >
                   Launch Interactive Playground →
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={onOpenMap}
+                  className="text-emerald-400 hover:text-white font-semibold transition-colors"
+                >
+                  Open GIS Map →
                 </button>
               </li>
             </ul>

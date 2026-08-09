@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Cpu, CheckCircle2, AlertCircle, Zap, ShieldCheck, Scale, Compass, Code, Info } from 'lucide-react';
+import { Cpu, CheckCircle2, AlertCircle, Zap, ShieldCheck, Scale, Compass, Code, Info, Map } from 'lucide-react';
 import { ALGORITHMS_DATA } from '../data/algorithmsData';
 import { AlgorithmType } from '../types';
 
 interface AlgorithmCardsProps {
   onSelectAlgorithmForPlayground: (algo: AlgorithmType) => void;
+  onOpenMap: () => void;
 }
 
-export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorithmForPlayground }) => {
+export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorithmForPlayground, onOpenMap }) => {
   const [activeSimulation, setActiveSimulation] = useState<AlgorithmType | null>('astar');
 
   return (
@@ -136,13 +137,23 @@ export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorith
                     {isSimulating ? 'Hide Visual Pattern' : 'Preview Search Shape'}
                   </button>
 
-                  <button
-                    onClick={() => onSelectAlgorithmForPlayground(algo.id)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 transition-all border border-slate-600/80 flex items-center gap-1.5 cursor-pointer"
-                    id={`test-in-visualizer-${algo.id}`}
-                  >
-                    Run in Visualizer →
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={onOpenMap}
+                      className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all border border-emerald-300 flex items-center gap-1.5 cursor-pointer"
+                      id={`open-gis-map-${algo.id}`}
+                    >
+                      <Map className="w-3.5 h-3.5 text-slate-950" />
+                      GIS Map
+                    </button>
+                    <button
+                      onClick={() => onSelectAlgorithmForPlayground(algo.id)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 transition-all border border-slate-600/80 flex items-center gap-1.5 cursor-pointer"
+                      id={`test-in-visualizer-${algo.id}`}
+                    >
+                      Run in Visualizer →
+                    </button>
+                  </div>
                 </div>
 
                 {/* Animated Expansion Shape Visualizer Preview */}

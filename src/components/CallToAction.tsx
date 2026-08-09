@@ -1,7 +1,7 @@
 import React from 'react';
-import { Play, Sparkles, Route, ArrowRight } from 'lucide-react';
+import { Play, Sparkles, Route, ArrowRight, Map } from 'lucide-react';
 
-export const CallToAction: React.FC<{ onOpenVisualizer: () => void }> = ({ onOpenVisualizer }) => {
+export const CallToAction: React.FC<{ onOpenVisualizer: () => void; onOpenMap: () => void }> = ({ onOpenVisualizer, onOpenMap }) => {
   return (
     <section className="py-20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -37,6 +37,15 @@ export const CallToAction: React.FC<{ onOpenVisualizer: () => void }> = ({ onOpe
               >
                 <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
                 Launch GeoPath Visualizer Now
+              </button>
+
+              <button
+                onClick={onOpenMap}
+                className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 active:scale-95 transition-all shadow-md border border-emerald-300 flex items-center justify-center gap-2.5 cursor-pointer group"
+                id="cta-open-gis-map-btn"
+              >
+                <Map className="w-4 h-4 text-slate-950 group-hover:scale-110 transition-transform" />
+                Open GIS Map
               </button>
             </div>
 

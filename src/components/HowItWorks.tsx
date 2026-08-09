@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Map, Share2, Cpu, Route, ArrowRight, CheckCircle2, Layers } from 'lucide-react';
 
-export const HowItWorks: React.FC = () => {
+interface HowItWorksProps {
+  onOpenMap: () => void;
+}
+
+export const HowItWorks: React.FC<HowItWorksProps> = ({ onOpenMap }) => {
   const [activeStep, setActiveStep] = useState<number>(0);
 
   const steps = [
@@ -239,6 +243,14 @@ export const HowItWorks: React.FC = () => {
             </ul>
 
             <div className="pt-4 flex items-center gap-3">
+              <button
+                onClick={onOpenMap}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 active:scale-95 transition-all border border-emerald-300 shadow-md flex items-center gap-2 cursor-pointer"
+                id="open-gis-map-btn"
+              >
+                <Map className="w-3.5 h-3.5 text-slate-950" />
+                Open GIS Map
+              </button>
               <button
                 onClick={() => setActiveStep((prev) => (prev + 1) % steps.length)}
                 className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-600/80 transition-all flex items-center gap-2 cursor-pointer shadow-md"

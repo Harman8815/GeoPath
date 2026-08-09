@@ -81,6 +81,10 @@ export default function App() {
     handleSelectAlgorithm(algo);
   };
 
+  const handleOpenMap = () => {
+    window.location.href = '/map';
+  };
+
   return (
     <div className="min-h-screen bg-[#121417] text-slate-100 font-sans antialiased selection:bg-slate-700 selection:text-white relative overflow-x-hidden">
       {/* Background radial grid pattern & canvas graph */}
@@ -103,19 +107,26 @@ export default function App() {
           <main className="flex-grow">
             <Hero
               onOpenVisualizer={() => setActiveTab('map')}
+              onOpenMap={handleOpenMap}
               onNavigateSection={handleNavigateSection}
             />
 
             <AlgorithmCards
               onSelectAlgorithmForPlayground={handleSelectAlgorithmForPlayground}
+              onOpenMap={handleOpenMap}
             />
 
-            <HowItWorks />
+            <HowItWorks
+              onOpenMap={handleOpenMap}
+            />
 
-            <BenchmarkSection />
+            <BenchmarkSection
+              onOpenMap={handleOpenMap}
+            />
 
             <CallToAction
               onOpenVisualizer={() => setActiveTab('map')}
+              onOpenMap={handleOpenMap}
             />
           </main>
 
@@ -123,6 +134,7 @@ export default function App() {
           <Footer
             onNavigateSection={handleNavigateSection}
             onOpenVisualizer={() => setActiveTab('map')}
+            onOpenMap={handleOpenMap}
           />
         </div>
       )}

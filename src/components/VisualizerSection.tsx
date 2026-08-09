@@ -1,6 +1,6 @@
 import React, { useState, useLayoutEffect, useRef, useCallback } from 'react';
 import {
-  Play, RotateCcw, Trash2, MapPin, Navigation
+  Play, RotateCcw, Trash2, MapPin, Navigation, Map
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AlgorithmType, GridNode, HeuristicType, SimulationStats } from '../types';
@@ -9,7 +9,7 @@ import {
   generateWeightedSwamps, generateRecursiveDivisionMaze, cloneGrid
 } from '../utils/pathfinding';
 
-export const VisualizerSection: React.FC<{ onBackToHome: () => void }> = ({ onBackToHome }) => {
+export const VisualizerSection: React.FC<{ onBackToHome: () => void; onOpenMap: () => void }> = ({ onBackToHome, onOpenMap }) => {
   const ROWS = 18;
   const COLS = 36;
 
@@ -286,6 +286,14 @@ export const VisualizerSection: React.FC<{ onBackToHome: () => void }> = ({ onBa
             id="back-to-home-btn"
           >
             ← Back to Overview
+          </button>
+          <button
+            onClick={onOpenMap}
+            className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-emerald-400"
+            id="open-gis-map-btn"
+          >
+            <Map className="w-3.5 h-3.5 text-slate-950" />
+            Open GIS Map
           </button>
           <div>
             <h1 className="text-lg font-bold text-white flex items-center gap-2">

@@ -14,7 +14,7 @@ export default function AlgorithmDetailRoute() {
       algoId={algoId}
       onBack={() => { window.location.href = "/algorithms"; }}
       onSelectAlgo={(id) => { window.location.href = `/algorithms/${id}`; }}
-      onOpenMap={() => { window.location.href = "/map-explorer"; }}
+      onOpenMap={() => { window.location.href = "/map"; }}
     />
   );
 }

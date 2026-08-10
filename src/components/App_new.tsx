@@ -120,9 +120,6 @@ export default function App() {
               onOpenMap={handleOpenMap}
             />
 
-            <BenchmarkSection
-              onOpenMap={handleOpenMap}
-            />
 
             <CallToAction
               onOpenVisualizer={() => setActiveTab('map')}

@@ -16,6 +16,63 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+.swiper-slide {
+  width: clamp(500px, 30vw, 360px) !important;
+  flex-shrink: 0;
+  display: block;
+  position: relative;
+  transition-property: transform;
+}
+/* Algorithm Cards Swiper */
+.algorithm-swiper-container {
+  overflow: visible !important;
+}
+
+.algorithm-swiper {
+  overflow: visible !important;
+  padding: 40px 0 60px;
+}
+
+.algorithm-swiper .swiper-slide {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.algorithm-swiper .swiper-slide-active {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.algorithm-swiper .swiper-slide-active > div {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.2), 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+.algorithm-swiper .swiper-slide:not(.swiper-slide-active) > div {
+  opacity: 0.65;
+  filter: blur(0.5px);
+}
+
+.algorithm-swiper .swiper-button-prev-custom,
+.algorithm-swiper .swiper-button-next-custom {
+  transition: all 0.3s ease;
+}
+
+.algorithm-swiper .swiper-button-prev-custom:hover,
+.algorithm-swiper .swiper-button-next-custom:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.algorithm-swiper .swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.3);
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.algorithm-swiper .swiper-pagination-bullet-active {
+  background: #10b981;
+  width: 20px;
+  border-radius: 4px;
+}
 
 canvas {
   min-height: 100vh;

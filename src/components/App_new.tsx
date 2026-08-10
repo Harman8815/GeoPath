@@ -166,11 +166,12 @@ export default function App() {
             onNavigateSection={handleNavigateSection}
           />
           <main className="flex-grow max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
-            <VisualizerSection onBackToHome={() => setActiveTab('home')} />
+            <VisualizerSection onBackToHome={() => setActiveTab('home')} onOpenMap={handleOpenMap} />
           </main>
           <Footer
             onNavigateSection={handleNavigateSection}
             onOpenVisualizer={() => setActiveTab('map')}
+            onOpenMap={handleOpenMap}
           />
         </div>
       )}
@@ -204,6 +205,7 @@ export default function App() {
             <Footer
               onNavigateSection={handleNavigateSection}
               onOpenVisualizer={() => setActiveTab('map')}
+              onOpenMap={handleOpenMap}
             />
           )}
         </div>

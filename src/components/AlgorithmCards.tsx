@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Cpu, CheckCircle2, AlertCircle, Zap, ShieldCheck, Scale, Compass, Code, Info, Map } from 'lucide-react';
+import { Cpu, CheckCircle2, AlertCircle, Info, Map } from 'lucide-react';
 import { ALGORITHMS_DATA } from '../data/algorithmsData';
 import { AlgorithmType } from '../types';
 
@@ -10,8 +10,12 @@ interface AlgorithmCardsProps {
 
 export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorithmForPlayground, onOpenMap }) => {
   const [activeSimulation, setActiveSimulation] = useState<AlgorithmType | null>('astar');
+  const [focusedIndex, setFocusedIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isHoveredRef = useRef(false);
+  const cardWidthRef = useRef(0);
+  const gapRef = useRef(24);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -51,6 +55,38 @@ export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorith
     };
   }, []);
 
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const cards = cardRefs.current.filter(Boolean);
+      if (!cards.length) return;
+
+      const containerCenter = container.scrollLeft + container.clientWidth / 2;
+
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      cards.forEach((card, index) => {
+        if (!card) return;
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(containerCenter - cardCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      setFocusedIndex(closestIndex);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <section id="algorithms" className="py-20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -75,18 +111,21 @@ export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorith
           className="auto-scroll-swiper flex gap-6 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
           style={{
             WebkitOverflowScrolling: 'touch',
+            scrollPadding: '0 calc(50% - 260px)',
           }}
         >
-          {ALGORITHMS_DATA.map((algo) => {
+          {ALGORITHMS_DATA.map((algo, index) => {
             const isSimulating = activeSimulation === algo.id;
+            const isFocused = index === focusedIndex;
 
             return (
               <div
                 key={algo.id}
-                className={`relative group rounded-2xl p-6 bg-[#16181d]/90 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between flex-shrink-0 w-[85vw] md:w-[520px] snap-center ${
-                  isSimulating
-                    ? 'border-zinc-700/80 shadow-md bg-[#1c1f26]'
-                    : 'border-zinc-800 hover:border-zinc-700 hover:bg-[#1c1f26]/90'
+                ref={(el) => { cardRefs.current[index] = el; }}
+                className={`relative group rounded-2xl p-6 bg-[#16181d]/90 border backdrop-blur-xl transition-all duration-500 flex flex-col justify-between flex-shrink-0 w-[85vw] md:w-[520px] snap-center ${
+                  isFocused
+                    ? 'scale-100 opacity-100 border-emerald-400/60 shadow-[0_0_30px_rgba(16,185,129,0.15)]'
+                    : 'scale-[0.92] opacity-60 border-zinc-800 hover:border-zinc-700'
                 }`}
               >
                 {/* Header Tag & Badge */}

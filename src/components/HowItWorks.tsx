@@ -245,7 +245,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onOpenMap }) => {
     <section
       id="how-it-works"
       ref={sectionRef}
-      className="relative py-24 overflow-hidden bg-slate-950/40"
+      className="relative bg-[#121417] py-24 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">

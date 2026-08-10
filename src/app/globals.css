@@ -8,6 +8,15 @@ body {
   overflow-x: hidden;
 }
 
+.auto-scroll-swiper::-webkit-scrollbar {
+  display: none;
+}
+
+.auto-scroll-swiper {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 canvas {
   min-height: 100vh;
 }

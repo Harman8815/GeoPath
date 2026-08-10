@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Cpu, CheckCircle2, AlertCircle, Zap, ShieldCheck, Scale, Compass, Code, Info, Map } from 'lucide-react';
 import { ALGORITHMS_DATA } from '../data/algorithmsData';
 import { AlgorithmType } from '../types';
@@ -10,13 +10,53 @@ interface AlgorithmCardsProps {
 
 export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorithmForPlayground, onOpenMap }) => {
   const [activeSimulation, setActiveSimulation] = useState<AlgorithmType | null>('astar');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isHoveredRef = useRef(false);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let animationFrameId: number;
+    let scrollSpeed = 0.6;
+
+    const autoScroll = () => {
+      if (!isHoveredRef.current && container) {
+        container.scrollLeft += scrollSpeed;
+
+        if (container.scrollLeft >= container.scrollWidth - container.clientWidth - 1) {
+          container.scrollLeft = 0;
+        }
+      }
+      animationFrameId = requestAnimationFrame(autoScroll);
+    };
+
+    animationFrameId = requestAnimationFrame(autoScroll);
+
+    const handleMouseEnter = () => {
+      isHoveredRef.current = true;
+    };
+
+    const handleMouseLeave = () => {
+      isHoveredRef.current = false;
+    };
+
+    container.addEventListener('mouseenter', handleMouseEnter);
+    container.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      container.removeEventListener('mouseenter', handleMouseEnter);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
 
   return (
     <section id="algorithms" className="py-20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+        <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold">
             <Cpu className="w-3.5 h-3.5 text-slate-300" />
             <span>Core Engines</span>
@@ -29,15 +69,21 @@ export const AlgorithmCards: React.FC<AlgorithmCardsProps> = ({ onSelectAlgorith
           </p>
         </div>
 
-        {/* Grid of Algorithm Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        {/* Horizontal Auto-Scroll Cards */}
+        <div
+          ref={scrollContainerRef}
+          className="auto-scroll-swiper flex gap-6 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           {ALGORITHMS_DATA.map((algo) => {
             const isSimulating = activeSimulation === algo.id;
 
             return (
               <div
                 key={algo.id}
-                className={`relative group rounded-2xl p-6 bg-[#16181d]/90 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between ${
+                className={`relative group rounded-2xl p-6 bg-[#16181d]/90 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between flex-shrink-0 w-[85vw] md:w-[520px] snap-center ${
                   isSimulating
                     ? 'border-zinc-700/80 shadow-md bg-[#1c1f26]'
                     : 'border-zinc-800 hover:border-zinc-700 hover:bg-[#1c1f26]/90'

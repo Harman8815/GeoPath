@@ -146,7 +146,7 @@ export default function App() {
             }}
             onNavigateSection={handleNavigateSection}
           />
-          <main className="flex-grow max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+          <main className="flex-grow max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 keep-scrolling-touch mt-4">
             <VisualizerSection onBackToHome={() => setActiveTab('home')} onOpenMap={handleOpenMap} />
           </main>
           <Footer

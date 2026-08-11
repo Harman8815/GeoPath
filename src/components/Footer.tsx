@@ -9,7 +9,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateSection, onOpenVisualizer, onOpenMap }) => {
   return (
-    <footer className="relative bg-[#121417] border-t border-zinc-800 pt-16 pb-12 overflow-hidden">
+    <footer className="relative bg-[#1214173f] border-t border-zinc-800 pt-16 pb-12 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-12 border-b border-slate-800">
           

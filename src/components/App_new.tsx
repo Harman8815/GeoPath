@@ -6,7 +6,6 @@ import { AlgorithmCards } from './AlgorithmCards';
 import { HowItWorks } from './HowItWorks';
 import { BenchmarkSection } from './BenchmarkSection';
 import { VisualizerSection } from './VisualizerSection';
-import { MapExplorer } from './MapExplorer';
 import { AlgorithmCatalog } from './AlgorithmCatalog';
 import { AlgorithmDetailPage } from './AlgorithmDetailPage';
 import { CallToAction } from './CallToAction';
@@ -136,21 +135,6 @@ export default function App() {
         </div>
       )}
 
-      {activeTab === 'map' && (
-        <div className="relative z-10 flex flex-col min-h-screen bg-[#121417]">
-          <Navbar
-            activeTab={activeTab}
-            setActiveTab={(tab) => {
-              if (selectedAlgoId) handleBackToCatalog();
-              setActiveTab(tab);
-            }}
-            onNavigateSection={handleNavigateSection}
-          />
-          <main className="flex-grow">
-            <MapExplorer onBackToHome={() => setActiveTab('home')} />
-          </main>
-        </div>
-      )}
 
       {activeTab === 'visualizer' && (
         <div className="relative z-10 flex flex-col min-h-screen">

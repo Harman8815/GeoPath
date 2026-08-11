@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     window.location.href = "/map";
   };
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-[#16181d]/90 border-b border-zinc-800 transition-all duration-200">
+    <header className="fixed w-screen top-0 z-50 backdrop-blur-md bg-[#16181d]/90 border-b border-zinc-800 transition-all duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}

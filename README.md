@@ -1,68 +1,57 @@
-# GeoPath - Geographic Pathfinding Visualizer
+# GeoPath
 
-An interactive web application for visualizing pathfinding algorithms over real-world road networks. Powered by Deck.gl, MapLibre GL, and OpenStreetMap (Overpass API) data.
+An interactive pathfinding visualizer that runs algorithms on real-world road networks using OpenStreetMap data.
 
-![GeoPath Screen Mockup](image.png)
 
 ## Features
 
-- 🗺️ **Real-World Map Visualizer**: Visualizes paths directly on real geographical maps using Deck.gl layers.
-- 🛣️ **Overpass API Integration**: Fetches actual street network data inside a customizable circular radius.
-- 🚀 **Interactive Pathfinding**: Watch search algorithms traverse streets and intersections in real-time.
-- 🔍 **Multiple Algorithms Supported**:
-  - **A\* Search**: Heuristic-guided search utilizing Euclidean distances.
-  - **Dijkstra's Algorithm**: Classic weighted shortest path explorer.
-  - **Greedy Best-First Search**: Quick heuristic-based pathfinding.
-  - **Bidirectional Search**: Searches from both source and destination simultaneously.
-- ⏱️ **Playback Controls**: Play, pause, adjust speed, and scrub through animation steps.
-- 🎨 **Visual Styling Customization**: Edit colors for start/end nodes, explored networks, and the final route.
-- ⌨️ **Keyboard Shortcuts**: Space for Play/Pause, R to Clear, Arrow keys for manual stepping.
-- 🧭 **Algorithm Catalog**: Browse supported algorithms with detail pages and usage metadata.
-- 🧩 **Interactive Playground**: Grid-based pathfinding sandbox with maze generators, weighted terrain, and telemetry.
-- 🎬 **Scroll-Driven Storytelling**: GSAP-powered How It Works section with zigzag step animations.
-
----
+GeoPath supports A*, Dijkstra, Greedy Best-First, and Bidirectional Search, with real-time visualization, playback controls, adjustable speed, and interactive map-based node selection. Road networks are fetched through the Overpass API and rendered using Deck.gl and MapLibre GL.
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18+
-- npm, yarn, or pnpm
-
-### Installation
-
-Install the project dependencies:
+Requires Node.js 18+.
 
 ```bash
+git clone <repository-url>
+cd geopath
 npm install
-```
-
-### Running Locally
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your web browser.
+Open `http://localhost:3000`.
 
-### Building for Production
-
-To create a production build:
+For a production build:
 
 ```bash
 npm run build
 npm run start
 ```
 
----
+If environment variables are required, create `.env.local` and never commit secrets or API keys.
 
-## How to Use
+## Controls
 
-1. **Set the Start Point**: Click anywhere on the map to define the start node. The application will fetch the surrounding road network within the specified radius.
-2. **Set the Destination**: Enable `Place End Node` in the UI (or right-click) and select any point inside the green circular boundary.
-3. **Choose the Algorithm**: Open the **Settings Sidebar** (top-right gear icon) to switch between A*, Dijkstra, Greedy, or Bidirectional Search.
-4. **Run the Simulation**: Press **Space** or click the **Play** button at the bottom toolbar. Adjust the speed slider to speed up or slow down the search.
-5. **Analyze or Replay**: Once finished, use the timeline scrubber or arrow keys to manually review how the search explored the map grid.
+Click the map to select the start point, choose the destination, select an algorithm from Settings, and press `Space` or Play to start the simulation.
+
+`Space` Play/Pause
+`R` Reset
+`← / →` Step through the simulation
+
+## Tech Stack
+
+Next.js, TypeScript, Deck.gl, MapLibre GL, OpenStreetMap, Overpass API, and GSAP.
+
+## Releases
+
+GeoPath uses Git tags for releases:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+Versions follow `MAJOR.MINOR.PATCH`.
+
+## License
+
+See the repository license for details.
